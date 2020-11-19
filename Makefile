@@ -15,11 +15,11 @@ DIR_OBJ = obj
 INC = -I$(DIR_3D) -I$(DIR_UI) -I$(DIR_COMMON)
 
 %.o:../$(DIR_COMMON)/%.c
-	$(CC) -O3 -Wall -c $< $(INC) -o $@
+	$(CC) -Wall -c $< $(INC) -o $@
 %.o:../$(DIR_3D)/%.c
-	$(CC) -O3 -Wall -c $< $(INC) -o $@
+	$(CC) -Wall -c $< $(INC) -o $@
 %.o:../$(DIR_UI)/%.c
-	$(CC) -O3 -Wall -c $< $(INC) -o $@
+	$(CC) -Wall -c $< $(INC) -o $@
 
 # ----- obj中的.o文件统计 -----
 
@@ -30,7 +30,7 @@ obj-ui = ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_UI)/*.c}}}
 #----- 把所有.o文件链接,最终编译 -----
 
 out: $(obj-3d) $(obj-ui) $(obj-common)
-	$(CC) -Wall -o out main.c $(INC)
+	$(CC) -Wall -o out main.c $(INC) -lm -lpthread
 
 clean:
 	@rm ./obj/* out

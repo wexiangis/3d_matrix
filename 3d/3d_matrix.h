@@ -4,9 +4,32 @@
 #ifndef _3D_MATRIX_H_
 #define _3D_MATRIX_H_
 
-#include <stdint.h> //引入标准化的数据类型
+#include <stdbool.h>
 
-#define _3D_MATRIX_PI 3.1415926535897
+// 旋转 + 平移
+void _3d_matrix_roll_mov_calculate(double rollXYZ[3], double movXYZ[3], double xyz[3]);
 
+/*
+ *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
+ * 
+ *  参数:
+ *      openAngle: 相机开角(单位:rad,范围:(0,pi))
+ *      xyz[3]: 要计算的空间坐标
+ *      ar: 相机的屏幕的宽高比
+ *      nearZ: 相机近端距离
+ *      farZ: 相机远端距离
+ *      retXY: 计算结果,一个二维平面坐标(注意其坐标原点是屏幕中心)
+ *      retDepth: 计算结果,深度值(远离屏幕的距离,单位:点)
+ * 
+ *  返回: 0/不再相框内  1/在相框内
+ */
+bool _3d_matrix_project_calculate(
+    double openAngle,
+    double xyz[3],
+    double ar,
+    int nearZ,
+    int farZ,
+    double *retXY,
+    double *retDepth);
 
 #endif

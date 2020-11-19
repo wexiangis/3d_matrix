@@ -4,9 +4,7 @@
 #ifndef _3D_CAMERA_H_
 #define _3D_CAMERA_H_
 
-#include <stdint.h> //引入标准化的数据类型
-
-#define _3D_CAMERA_PI 3.1415926535897
+#include <stdint.h>
 
 typedef struct _3DCamera
 {
@@ -25,6 +23,8 @@ typedef struct _3DCamera
 
     double xyz[3];     //相机原点当前所在坐标
     double rollXYZ[3]; //相机绕自身坐标系转角(单位:rad)
+
+    uint8_t *photoMap; //照片缓冲区,RGB存储格式,大小 width*height*3
 
     struct _3DCamera *backup; //对初始化时的参数进行备份
 
@@ -67,5 +67,8 @@ void _3d_camera_zoom(_3D_Camera *camera, double zoom);
 
 // 锁定目标, 之后 _3d_camera_roll 将变成完全绕目标转动
 void _3d_camera_lock(_3D_Camera *camera, double *xyz);
+
+// 解除锁定
+void _3d_camera_unlock(_3D_Camera *camera);
 
 #endif
