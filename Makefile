@@ -15,22 +15,22 @@ DIR_OBJ = obj
 INC = -I$(DIR_3D) -I$(DIR_UI) -I$(DIR_COMMON)
 
 %.o:../$(DIR_COMMON)/%.c
-	$(CC) -Wall -c $< $(INC) -o $@
+	@$(CC) -Wall -c $< $(INC) -o $@
 %.o:../$(DIR_3D)/%.c
-	$(CC) -Wall -c $< $(INC) -o $@
+	@$(CC) -Wall -c $< $(INC) -o $@
 %.o:../$(DIR_UI)/%.c
-	$(CC) -Wall -c $< $(INC) -o $@
+	@$(CC) -Wall -c $< $(INC) -o $@
 
 # ----- obj中的.o文件统计 -----
 
-obj-common = ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_COMMON)/*.c}}}
-obj-3d = ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_3D)/*.c}}}
-obj-ui = ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_UI)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_COMMON)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_3D)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_UI)/*.c}}}
 
 #----- 把所有.o文件链接,最终编译 -----
 
-out: $(obj-3d) $(obj-ui) $(obj-common)
-	$(CC) -Wall -o out main.c $(INC) -lm -lpthread
+out: $(obj)
+	@$(CC) -Wall -o out main.c $(obj) $(INC) -lm -lpthread
 
 clean:
 	@rm ./obj/* out

@@ -51,11 +51,27 @@ int main(int argc, char **argv)
 
 void init(void)
 {
+    //相机1的初始位置和角度
+    double camera1_xyz[] = {0, 0, 0};
+    double camera1_roll_xyz[] = {0, 0, 0};
+    //相机2的初始位置和角度
+    double camera2_xyz[] = {0, 0, 0};
+    double camera2_roll_xyz[] = {0, 0, 0};
+
     //相机初始化
-    ;
+    camera1 = _3d_camera_init(320, 320, 1.57, 5, 1000, camera1_xyz, camera1_roll_xyz);
+    camera2 = _3d_camera_init(320, 320, 1.57, 5, 1000, camera2_xyz, camera2_roll_xyz);
 
     //模型初始化
-    ;
+    model1 = _3d_model_init(8,
+        10.00, 20.00, 30.00, 0xFF0000,
+        -10.00, 20.00, 30.00, 0xFF0000,
+        10.00, 20.00, 30.00, 0xFF0000,
+        -10.00, 20.00, 30.00, 0xFF0000,
+        10.00, 20.00, 30.00, 0xFF0000,
+        -10.00, 20.00, 30.00, 0xFF0000,
+        10.00, 20.00, 30.00, 0xFF0000,
+        -10.00, 20.00, 30.00, 0xFF0000);
 
     //引擎初始化
     ;

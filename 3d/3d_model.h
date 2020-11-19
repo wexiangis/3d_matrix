@@ -11,15 +11,16 @@
 typedef struct _3DPoint
 {
     double x, y, z;
+    uint32_t color;
 } _3D_Point;
 
 // 三维空间点的连线关系
 typedef struct _3DNet
 {
-    uint32_t pSrcOrder;   //选定点的序号
-    uint32_t *pDistOrder; //连接点的序号数组(用一个src点连接多个dist点)
-    uint32_t pDistCount;  //连接点数量
-    uint32_t color;       //线颜色
+    uint32_t pSrc;       //选定点的序号
+    uint32_t *pDist;     //连接点的序号数组(用一个src点连接多个dist点)
+    uint32_t pDistCount; //连接点数量
+    uint32_t color;      //线颜色
     struct _3DNet *next;
 } _3D_Net;
 
@@ -27,7 +28,7 @@ typedef struct _3DNet
 typedef struct _3DLabel
 {
     _3D_Point point; //位置
-    char *comment;   //注释内容
+    char *text;      //注释内容
     int color;       //文字颜色
     struct _3DLabel *next;
 } _3D_Label;
@@ -37,8 +38,8 @@ typedef struct _3DModel
 {
     uint32_t pCount;   //点的数量
     _3D_Point *pArray; //点数组
-    _3D_Net *net;      //连线关系
-    _3D_Label *label;  //注释
+    _3D_Net *net;      //连线关系链表
+    _3D_Label *label;  //注释链表
 } _3D_Model;
 
 /*
@@ -67,10 +68,10 @@ void _3d_model_net_add(_3D_Model *model, uint32_t color, uint32_t pSrc, uint32_t
  *  添加注释
  *  参数:
  *      color: 连线颜色
- *      comment: 注释内容
+ *      label: 注释内容
  *      x, y, z: 位置
  */
-void _3d_model_comment_add(_3D_Model *model, uint32_t color, char *comment, double x, double y, double z);
+void _3d_model_label_add(_3D_Model *model, uint32_t color, double x, double y, double z, char *text);
 
 // 模型拷贝
 _3D_Model *_3d_model_copy(_3D_Model *model);

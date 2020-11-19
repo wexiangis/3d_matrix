@@ -8,20 +8,20 @@
 #define _3D_MATRIX_PI 3.1415926535897
 
 // 旋转 + 平移
-void _3d_matrix_roll_mov_calculate(double rollXYZ[3], double movXYZ[3], double xyz[3])
+void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3])
 {
     double x, y, z;
     double Xrad, Yrad, Zrad;
 
-    if (rollXYZ == NULL || movXYZ == NULL || xyz == NULL)
+    if (roll_xyz == NULL || mov_xyz == NULL || xyz == NULL)
         return;
 
     x = xyz[0];
     y = xyz[1];
     z = xyz[2];
-    Xrad = rollXYZ[0];
-    Yrad = rollXYZ[1];
-    Zrad = rollXYZ[2];
+    Xrad = roll_xyz[0];
+    Yrad = roll_xyz[1];
+    Zrad = roll_xyz[2];
 
     /*      [scroll X]
     *   1       0       0
@@ -61,9 +61,9 @@ void _3d_matrix_roll_mov_calculate(double rollXYZ[3], double movXYZ[3], double x
         z * cos(Xrad) * cos(Yrad);
 
     // move
-    xyz[0] += movXYZ[0];
-    xyz[1] += movXYZ[1];
-    xyz[2] += movXYZ[2];
+    xyz[0] += mov_xyz[0];
+    xyz[1] += mov_xyz[1];
+    xyz[2] += mov_xyz[2];
 }
 
 /*

@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 // 旋转 + 平移
-void _3d_matrix_roll_mov_calculate(double rollXYZ[3], double movXYZ[3], double xyz[3]);
+void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3]);
 
 /*
  *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
