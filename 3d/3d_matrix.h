@@ -6,14 +6,20 @@
 
 #include <stdbool.h>
 
-// 旋转 + 平移
+/*
+ *  旋转 + 平移
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:度
+ *      mov_xyz: 三轴平移量
+ *      xyz: 目标点,旋转和平移后结果覆写到此
+ */
 void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3]);
 
 /*
  *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
  * 
  *  参数:
- *      openAngle: 相机开角(单位:rad,范围:(0,pi))
+ *      openAngle: 相机开角(单位:度,范围:[1,359])
  *      xyz[3]: 要计算的空间坐标
  *      ar: 相机的屏幕的宽高比
  *      nearZ: 相机近端距离

@@ -11,15 +11,13 @@
 #include "3d_model.h"
 #include "3d_matrix.h"
 
-// 单元的运动状态
+// 单元的运动控制状态
 typedef struct _3DSport
 {
     double xyz[3];      //质心在空间中的位置
-    double roll_xyz[3]; //绕自身坐标系转角(单位:rad)
-
+    double roll_xyz[3]; //绕自身坐标系转角(单位:度)
     double speed[3];       //速度向量,相对空间坐标系,单位:点/秒
-    double speed_angle[3]; //角速度向量,相对自身坐标系,单位:rad/秒
-
+    double speed_angle[3]; //角速度向量,相对自身坐标系,单位:度/秒
     // struct _3DSport *next;   //用链表来记录历史状态
 } _3D_Sport;
 

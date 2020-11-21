@@ -6,14 +6,11 @@
 #include <string.h>
 #include "3d_camera.h"
 
-#define _3D_CAMERA_PI 3.1415926535897
-#define _3D_CAMERA_2PI (_3D_CAMERA_PI * 2)
-
 /*
  *  相机初始化
  *  参数:
  *      width, height: 相机屏幕宽高
- *      openAngle: 相机视野开角, 范围(0,PI), 推荐值: PI/2 即 1.57
+ *      openAngle: 相机视野开角, 范围[1,359], 推荐值: 90
  *      near, far: 可视范围的近端和远端, 要求大于0且far要大于near, 推荐值: near=5 far=1000
  * 
  *  返回: NULL/参数错误
@@ -29,7 +26,7 @@ _3D_Camera *_3d_camera_init(
 {
     _3D_Camera *camera;
     //参数检查
-    if (openAngle < 0.1 || openAngle > 3.14 || near < 1 || far <= near)
+    if (openAngle < 360 || openAngle > 0 || near < 1 || far <= near)
         return NULL;
 
     camera = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
@@ -97,27 +94,27 @@ void _3d_camera_release(_3D_Camera **camera)
 
 /* ---------- 运动 ---------- */
 
-// 相机3轴旋转, 增量式, 绕自身坐标系, 单位:rad
+// 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
 void _3d_camera_roll(_3D_Camera *camera, double *roll_xyz)
 {
     camera->roll_xyz[0] += roll_xyz[0];
     camera->roll_xyz[1] += roll_xyz[1];
     camera->roll_xyz[2] += roll_xyz[2];
     //范围限制
-    if (camera->roll_xyz[0] > _3D_CAMERA_2PI)
-        camera->roll_xyz[0] -= _3D_CAMERA_2PI;
-    else if (camera->roll_xyz[0] < -_3D_CAMERA_2PI)
-        camera->roll_xyz[0] += _3D_CAMERA_2PI;
+    if (camera->roll_xyz[0] > 360.00)
+        camera->roll_xyz[0] -= 360.00;
+    else if (camera->roll_xyz[0] < -360.00)
+        camera->roll_xyz[0] += 360.00;
 
-    if (camera->roll_xyz[1] > _3D_CAMERA_2PI)
-        camera->roll_xyz[1] -= _3D_CAMERA_2PI;
-    else if (camera->roll_xyz[1] < -_3D_CAMERA_2PI)
-        camera->roll_xyz[1] += _3D_CAMERA_2PI;
+    if (camera->roll_xyz[1] > 360.00)
+        camera->roll_xyz[1] -= 360.00;
+    else if (camera->roll_xyz[1] < -360.00)
+        camera->roll_xyz[1] += 360.00;
 
-    if (camera->roll_xyz[2] > _3D_CAMERA_2PI)
-        camera->roll_xyz[3] -= _3D_CAMERA_2PI;
-    else if (camera->roll_xyz[2] < -_3D_CAMERA_2PI)
-        camera->roll_xyz[2] += _3D_CAMERA_2PI;
+    if (camera->roll_xyz[2] > 360.00)
+        camera->roll_xyz[3] -= 360.00;
+    else if (camera->roll_xyz[2] < -360.00)
+        camera->roll_xyz[2] += 360.00;
 }
 
 // 相机3轴平移, 增量式, 基于空间坐标系

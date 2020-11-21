@@ -7,7 +7,13 @@
 
 #define _3D_MATRIX_PI 3.1415926535897
 
-// 旋转 + 平移
+/*
+ *  旋转 + 平移
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:度
+ *      mov_xyz: 三轴平移量
+ *      xyz: 目标点,旋转和平移后结果覆写到此
+ */
 void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3])
 {
     double x, y, z;
@@ -19,9 +25,9 @@ void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double
     x = xyz[0];
     y = xyz[1];
     z = xyz[2];
-    Xrad = roll_xyz[0];
-    Yrad = roll_xyz[1];
-    Zrad = roll_xyz[2];
+    Xrad = roll_xyz[0] * _3D_MATRIX_PI / 180;
+    Yrad = roll_xyz[1] * _3D_MATRIX_PI / 180;
+    Zrad = roll_xyz[2] * _3D_MATRIX_PI / 180;
 
     /*      [scroll X]
     *   1       0       0
@@ -93,7 +99,8 @@ bool _3d_matrix_project_calculate(
     double retX, retY, retZ;
 
     //快速检查
-    if (openAngle >= _3D_MATRIX_PI ||
+    if (openAngle >= 360 ||
+        openAngle < 1 ||
         ar <= 0 ||
         xyz == NULL ||
         xyz[2] == 0 ||
@@ -101,6 +108,9 @@ bool _3d_matrix_project_calculate(
         xyz[2] < nearZ ||
         xyz[2] > farZ)
         return false;
+
+    //度转rad
+    openAngle = openAngle * _3D_MATRIX_PI / 180;
 
     //屏幕高、宽范围(这里是假设屏幕高为2时的数值)
     hMax = 1;
