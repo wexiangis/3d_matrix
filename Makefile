@@ -30,7 +30,7 @@ obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_UI)/*.c}}}
 #----- 把所有.o文件链接,最终编译 -----
 
 out: $(obj)
-	@$(CC) -Wall -o out main.c $(obj) $(INC) -lm -lpthread
+	@$(CC) -Wall -o out $(obj) $(INC) -lm -lpthread
 
 clean:
 	@rm ./obj/* out

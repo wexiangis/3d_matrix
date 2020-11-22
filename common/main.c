@@ -6,12 +6,17 @@
 #include <sys/ioctl.h>
 
 #include "3d_engine.h"
+#include "2d_draw.h"
 #include "delayus.h"
+#include "fbmap.h"
 
 //main函数刷新间隔
 #define INTERVAL_MS 100
 //引擎计算间隔
 #define ENGINE_INTERVAL_MS 100
+
+#define DIV_MOV  10
+#define ROLL_DIV 20
 
 //2个相机(两个视图窗口)
 static _3D_Camera *camera1, *camera2;
@@ -23,13 +28,15 @@ static _3D_Sport *sport0, *sport1, *sport2;
 static _3D_Engine *engine;
 
 //把大陀的初始化代码放到main函数后面,方便快速查看
-void init(void);
+void engine_init(void);
 
 int main(int argc, char **argv)
 {
     //终端输入
     char input[16];
     int fd;
+    double mov_xyz[3];
+    double roll_xyz[3];
 
     //打开终端
     if (argc > 1)
@@ -39,55 +46,92 @@ int main(int argc, char **argv)
     //非阻塞设置
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 
+    //初始化引擎
+    engine_init();
+
     //引擎启动
-    _3d_engine_start (engine);
+    // _3d_engine_start (engine);
 
     while (1)
     {
         delayms(INTERVAL_MS);
 
+        //清空相机照片
+        _3d_camera_photo_clear(camera1, 0x000000);
+        _3d_camera_photo_clear(camera2, 0x000000);
+
+        //相机抓拍
+        _3d_engine_photo(engine, camera1);
+        _3d_engine_photo(engine, camera2);
+
+        //把照片显示到屏幕(由于这里要打开 /dev/fb0 设备,所以需要 sudo 运行)
+        fb_output(camera1->photoMap, 0, 0, camera1->width, camera1->height);
+        fb_output(camera2->photoMap, camera2->width, 0, camera2->width, camera2->height);
+
         //读取终端输入
         memset(input, 0, sizeof(input));
         if (read(fd, input, sizeof(input)) > 0)
         {
-            ;
+            memset(mov_xyz, 0, sizeof(double) * 3);
+            memset(roll_xyz, 0, sizeof(double) * 3);
+            //平移
+            if (input[0] == '1')
+                mov_xyz[0] = DIV_MOV;
+            else if (input[0] == '3')
+                mov_xyz[0] = -DIV_MOV;
+            else if (input[0] == '2')
+                mov_xyz[2] = DIV_MOV;
+            else if (input[0] == 'w')
+                mov_xyz[2] = -DIV_MOV;
+            else if (input[0] == 'q')
+                mov_xyz[1] = DIV_MOV;
+            else if (input[0] == 'e')
+                mov_xyz[1] = -DIV_MOV;
+
+            else if (input[0] == 'R')
+            {
+                _3d_camera_reset(camera1);
+                _3d_camera_reset(camera2);
+            }
+
+            _3d_camera_mov(camera1, mov_xyz);
+            _3d_camera_mov(camera2, mov_xyz);
         }
     }
 
     return 0;
 }
 
-void init(void)
+void engine_init(void)
 {
     //相机初始位置和转角
-    double camera1_xyz[3] = {0, 0, 0};
+    double camera1_xyz[3] = {-100, 50, 10};
     double camera1_roll_xyz[3] = {0, 0, 0};
-    double camera2_xyz[3] = {0, 0, 0};
+    double camera2_xyz[3] = {-100, -50, 10};
     double camera2_roll_xyz[3] = {0, 0, 0};
     //模型初始位置和转角
-    double model1_xyz[3] = {0, 0, 0};
+    double model1_xyz[3] = {0, 50, 0};
     double model1_roll_xyz[3] = {0, 0, 0};
-    double model2_xyz[3] = {0, 0, 0};
+    double model2_xyz[3] = {0, -50, 0};
     double model2_roll_xyz[3] = {0, 0, 0};
 
     //相机1,2初始化: 300x300窗口,开角90度,近远范围(5,1000)
     camera1 = _3d_camera_init(300, 300, 90, 5, 1000, camera1_xyz, camera1_roll_xyz);
     camera2 = _3d_camera_init(300, 300, 90, 5, 1000, camera2_xyz, camera2_roll_xyz);
 
-    //模型0初始化: 空间坐标轴 (注意!! 变长参数中的double类型一定要0.0格式)
     model0 = _3d_model_init(6,
-        300.0, 0.0, 0.0, 0x800000,
-        -300.0, 0.0, 0.0, 0x800000,
-        0.0, 300.0, 0.0, 0x008000,
-        0.0, -300.0, 0.0, 0x008000,
-        0.0, 0.0, 300.0, 0x000080,
-        0.0, 0.0, -300.0, 0x000080);
+        100.0, 0.0, 0.0, 0x800000,
+        -100.0, 0.0, 0.0, 0x800000,
+        0.0, 100.0, 0.0, 0x008000,
+        0.0, -100.0, 0.0, 0x008000,
+        0.0, 0.0, 100.0, 0x000080,
+        0.0, 0.0, -100.0, 0x000080);
     _3d_model_net_add(model0, 0x800000, 0, 1, 1); //连线关系
     _3d_model_net_add(model0, 0x008000, 2, 1, 3);
     _3d_model_net_add(model0, 0x000080, 4, 1, 5);
-    _3d_model_label_add(model0, 0x800000, 300.0, 0.0, 0.0, "X"); //注释
-    _3d_model_label_add(model0, 0x008000, 0.0, 300.0, 0.0, "Y");
-    _3d_model_label_add(model0, 0x000080, 0.0, 0.0, 300.0, "Z");
+    _3d_model_label_add(model0, 0x800000, 100.0, 0.0, 0.0, "X"); //注释
+    _3d_model_label_add(model0, 0x008000, 0.0, 100.0, 0.0, "Y");
+    _3d_model_label_add(model0, 0x000080, 0.0, 0.0, 100.0, "Z");
 
     //模型1初始化: 长方体 (注意!! 变长参数中的double类型一定要0.0格式)
     model1 = _3d_model_init(8,

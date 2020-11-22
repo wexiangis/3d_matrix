@@ -8,23 +8,19 @@
 #define _3D_MATRIX_PI 3.1415926535897
 
 /*
- *  旋转 + 平移
+ *  旋转矩阵,绕xyz顺序旋转
  *  参数:
  *      roll_xyz: 绕三轴旋转,单位:度
- *      mov_xyz: 三轴平移量
- *      xyz: 目标点,旋转和平移后结果覆写到此
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3])
+void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[3])
 {
-    double x, y, z;
     double Xrad, Yrad, Zrad;
-
-    if (roll_xyz == NULL || mov_xyz == NULL || xyz == NULL)
+    //参数检查
+    if (roll_xyz == NULL || xyz == NULL || retXyz == NULL)
         return;
-
-    x = xyz[0];
-    y = xyz[1];
-    z = xyz[2];
+    //度转rad
     Xrad = roll_xyz[0] * _3D_MATRIX_PI / 180;
     Yrad = roll_xyz[1] * _3D_MATRIX_PI / 180;
     Zrad = roll_xyz[2] * _3D_MATRIX_PI / 180;
@@ -48,28 +44,25 @@ void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double
     *   result = [scroll X][scroll Y][scroll Z]|y|
     *                                          |z|
     *
-    *            |xyz[0]|
-    *          = |xyz[1]|
-    *            |xyz[2]|
+    *            |retXyz[0]|
+    *          = |retXyz[1]|
+    *            |retXyz[2]|
     *
-    *   xyz[*] just like the following ...
+    *   retXyz[*] just like the following ...
     */
 
-    xyz[0] =
-        x * cos(Yrad) * cos(Zrad) - y * cos(Yrad) * sin(Zrad) + z * sin(Yrad);
-    xyz[1] =
-        x * (sin(Xrad) * sin(Yrad) * cos(Zrad) + cos(Xrad) * sin(Zrad)) -
-        y * (sin(Xrad) * sin(Yrad) * sin(Zrad) - cos(Xrad) * cos(Zrad)) -
-        z * sin(Xrad) * cos(Yrad);
-    xyz[2] =
-        -x * (cos(Xrad) * sin(Yrad) * cos(Zrad) - sin(Xrad) * sin(Zrad)) +
-        y * (cos(Xrad) * sin(Yrad) * sin(Zrad) + sin(Xrad) * cos(Zrad)) +
-        z * cos(Xrad) * cos(Yrad);
-
-    // move
-    xyz[0] += mov_xyz[0];
-    xyz[1] += mov_xyz[1];
-    xyz[2] += mov_xyz[2];
+    retXyz[0] =
+        xyz[0] * cos(Yrad) * cos(Zrad)-
+        xyz[1] * cos(Yrad) * sin(Zrad) +
+        xyz[2] * sin(Yrad);
+    retXyz[1] =
+        xyz[0] * (sin(Xrad) * sin(Yrad) * cos(Zrad) + cos(Xrad) * sin(Zrad)) -
+        xyz[1] * (sin(Xrad) * sin(Yrad) * sin(Zrad) - cos(Xrad) * cos(Zrad)) -
+        xyz[2] * sin(Xrad) * cos(Yrad);
+    retXyz[2] =
+        -xyz[0] * (cos(Xrad) * sin(Yrad) * cos(Zrad) - sin(Xrad) * sin(Zrad)) +
+        xyz[1] * (cos(Xrad) * sin(Yrad) * sin(Zrad) + sin(Xrad) * cos(Zrad)) +
+        xyz[2] * cos(Xrad) * cos(Yrad);
 }
 
 /*
@@ -99,14 +92,13 @@ bool _3d_matrix_project_calculate(
     double retX, retY, retZ;
 
     //快速检查
-    if (openAngle >= 360 ||
-        openAngle < 1 ||
-        ar <= 0 ||
+    if (openAngle >= 360 || openAngle < 1)
+        return false;
+    if (ar <= 0 ||
         xyz == NULL ||
-        xyz[2] == 0 ||
         nearZ >= farZ ||
-        xyz[2] < nearZ ||
-        xyz[2] > farZ)
+        xyz[0] < nearZ ||
+        xyz[0] > farZ)
         return false;
 
     //度转rad
@@ -139,9 +131,9 @@ bool _3d_matrix_project_calculate(
     *                         retY in the range of (-1, 1)
     *                         retZ in the range of (-1, 1)
     */
-    retX = xyz[0] / ar / tan(openAngle / 2) / xyz[2];
-    retY = xyz[1] / tan(openAngle / 2) / xyz[2];
-    retZ = ((-nearZ) - farZ) / (nearZ - farZ) + 2 * farZ * nearZ / (nearZ - farZ) / xyz[2];
+    retX = xyz[1] / ar / tan(openAngle / 2) / xyz[0];
+    retY = xyz[2] / tan(openAngle / 2) / xyz[0];
+    retZ = ((-nearZ) - farZ) / (nearZ - farZ) + 2 * farZ * nearZ / (nearZ - farZ) / xyz[0];
 
     //返回二维坐标
     if (retXY)
@@ -151,7 +143,7 @@ bool _3d_matrix_project_calculate(
     }
     //深度
     if (retDepth)
-        *retDepth = xyz[2] - nearZ;
+        *retDepth = xyz[0] - nearZ;
     //是否在相框范围内
     if (wMax > retX && retX > wMin &&
         hMax > retY && retY > hMin &&

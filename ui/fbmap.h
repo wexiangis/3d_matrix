@@ -4,6 +4,10 @@
 #ifndef _FBMAP_H_
 #define _FBMAP_H_
 
+#include <stdint.h>
+
+#define FB_PATH "/dev/fb0"
+
 //屏幕宽高
 extern int fb_width, fb_height;
 
@@ -13,6 +17,6 @@ extern int fb_width, fb_height;
  *  offsetX, offsetY: 屏幕起始位置
  *  width, height: 图像宽高
  */
-void fb_output(unsigned char *data, int offsetX, int offsetY, int width, int height);
+void fb_output(uint8_t *data, uint32_t offsetX, uint32_t offsetY, uint32_t width, uint32_t height);
 
 #endif

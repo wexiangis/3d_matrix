@@ -7,13 +7,13 @@
 #include <stdbool.h>
 
 /*
- *  旋转 + 平移
+ *  旋转矩阵,绕xyz顺序旋转
  *  参数:
  *      roll_xyz: 绕三轴旋转,单位:度
- *      mov_xyz: 三轴平移量
- *      xyz: 目标点,旋转和平移后结果覆写到此
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_mov_calculate(double roll_xyz[3], double mov_xyz[3], double xyz[3]);
+void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[3]);
 
 /*
  *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]

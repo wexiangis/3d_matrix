@@ -26,7 +26,7 @@ _3D_Camera *_3d_camera_init(
 {
     _3D_Camera *camera;
     //参数检查
-    if (openAngle < 360 || openAngle > 0 || near < 1 || far <= near)
+    if (openAngle > 359 || openAngle < 1 || near < 1 || far <= near)
         return NULL;
 
     camera = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
@@ -55,6 +55,21 @@ _3D_Camera *_3d_camera_init(
 void _3d_camera_reset(_3D_Camera *camera)
 {
     memcpy(camera, camera->backup, sizeof(_3D_Camera));
+}
+
+// 清空照片
+void _3d_camera_photo_clear(_3D_Camera *camera, uint32_t rgbColor)
+{
+    uint32_t offset;
+    uint8_t r = (rgbColor >> 16) & 0xFF;
+    uint8_t g = (rgbColor >> 8) & 0xFF;
+    uint8_t b = (rgbColor >> 0) & 0xFF;
+    for (offset = 0; offset < camera->photoSize;)
+    {
+        camera->photoMap[offset++] = r;
+        camera->photoMap[offset++] = g;
+        camera->photoMap[offset++] = b;
+    }
 }
 
 // 相机参数备份

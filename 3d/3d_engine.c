@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "3d_engine.h"
+#include "2d_draw.h"
 
 #define _3D_ENGINE_PI 3.1415926535897
 #define _3D_ENGINE_2PI (_3D_ENGINE_PI * 2)
@@ -34,7 +35,7 @@ long engine_getTickUs(void)
     _tick1 = engine_getTickUs();
 
 //根据sport运动状态,更新位置和旋转角度(朝向)
-void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
+static void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
 {
     uint32_t count;
     //平移
@@ -60,23 +61,19 @@ void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
 }
 
 // 主线程
-void _3d_engine_thread(void *argv)
+static void _3d_engine_thread(void *argv)
 {
     _3D_Engine *engine = (_3D_Engine *)argv;
     _3D_Unit *unit;
     ENGINE_DELAY_INIT;
-
     while (!engine->threadExit)
     {
         ENGINE_DELAY_US(engine->intervalMs * 1000);
-
         //暂停状态
         if (!engine->run)
             continue;
-
-        pthread_mutex_lock(&engine->lock);
-
         //遍历模型链表
+        pthread_mutex_lock(&engine->lock);
         unit = engine->unit;
         while (unit)
         {
@@ -85,7 +82,6 @@ void _3d_engine_thread(void *argv)
             //下一个
             unit = unit->next;
         }
-        
         pthread_mutex_unlock(&engine->lock);
     }
 }
@@ -190,10 +186,285 @@ void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
     }
 }
 
+/*
+ *  获取模型身上每一个点的真实三维坐标
+ *  参数:
+ *      retXyz: 返回运算后模型所有点位置                              !! 用完记得free !!
+ *      retXyzTotal: 返回 retXyz 中坐标点的个数
+ *      retXyzLabel: 返回运算后模型所有label位置,可能*retXyzLabel=NULL !! 用完记得free !!
+ *      retXyzLabelTotal: 返回 retXyzLabel 中坐标点的个数
+ */
+static void _3d_engine_model_location(
+    _3D_Unit *unit,
+    double **retXyz, uint32_t *retXyzTotal,
+    double **retXyzLabel, uint32_t *retXyzLabelTotal)
+{
+    double *xyz = NULL;      //三维坐标数组
+    double *xyzLabel = NULL; //注释坐标数组
+    uint32_t xyzCount;       //坐标数组计数
+    _3D_Label *label = unit->model->label;
+    //点数组分配内存
+    xyz = (double *)calloc(unit->model->pCount * 3, sizeof(double));
+    //根据sport参数对这些三维坐标进行旋转和平移
+    for (xyzCount = 0; xyzCount < unit->model->pCount * 3;)
+    {
+        //先旋转
+        _3d_matrix_roll_calculate(
+            unit->sport.roll_xyz,
+            &unit->model->xyz[xyzCount],
+            &xyz[xyzCount]);
+        //再平移
+        xyz[xyzCount++] += unit->sport.xyz[0];
+        xyz[xyzCount++] += unit->sport.xyz[1];
+        xyz[xyzCount++] += unit->sport.xyz[2];
+    }
+    //返回
+    *retXyz = xyz;
+    *retXyzTotal = unit->model->pCount;
+    //这个模型有 label 链表吗?
+    if (label && unit->model->labelCount > 0)
+    {
+        //点数组分配内存
+        xyzLabel = (double *)calloc(unit->model->labelCount * 3, sizeof(double));
+        //根据sport参数对这些三维坐标进行旋转和平移
+        for (xyzCount = 0; xyzCount < unit->model->labelCount * 3 && label;)
+        {
+            //先旋转
+            _3d_matrix_roll_calculate(
+                unit->sport.roll_xyz,
+                label->xyz,
+                &xyzLabel[xyzCount]);
+            //再平移
+            xyzLabel[xyzCount++] += unit->sport.xyz[0];
+            xyzLabel[xyzCount++] += unit->sport.xyz[1];
+            xyzLabel[xyzCount++] += unit->sport.xyz[2];
+            //链表下一个
+            label = label->next;
+        }
+        //返回
+        *retXyzLabel = xyzLabel;
+        *retXyzLabelTotal = unit->model->labelCount;
+    }
+    else
+    {
+        //返回
+        *retXyzLabel = NULL;
+        *retXyzLabelTotal = 0;
+    }
+}
+
+/*
+ *  三维坐标点相对于相机的位置转换
+ *  参数:
+ *      xyz: 坐标点数组
+ *      xyzTotal: 数组中坐标点的个数
+ */
+static void _3d_engine_location_in_camera(_3D_Camera *camera, double *xyz, uint32_t xyzTotal)
+{
+    double roll_xyz[3];
+    uint32_t xyzCount;
+    //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
+    for (xyzCount = 0; xyzCount < xyzTotal * 3;)
+    {
+        //注意这里要反方向平移
+        xyz[xyzCount++] -= camera->xyz[0];
+        xyz[xyzCount++] += camera->xyz[1];
+        xyz[xyzCount++] += camera->xyz[2];
+    }
+    //再把相机自身的旋转转嫁为坐标点相对相机的旋转
+    for (xyzCount = 0; xyzCount < xyzTotal * 3; xyzCount += 3)
+    {
+        //注意这里要反方向旋转
+        roll_xyz[0] = -camera->roll_xyz[0];
+        roll_xyz[1] = -camera->roll_xyz[1];
+        roll_xyz[2] = -camera->roll_xyz[2];
+        _3d_matrix_roll_calculate(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
+    }
+}
+
+/*
+ *  透视投影三维坐标点到相机的二维平面
+ *      xyz: 坐标点数组
+ *      xyzTotal: 数组中坐标点的个数
+ *      retXy: 返回平面坐标数组                     !! 用完记得free !!
+ *      retDepth: 返回每个 retXy 点的深度信息,单位:点 !! 用完记得free !!
+ *      retInside: 返回每个 retXy 点是否在屏幕内     !! 用完记得free !!
+ */
+static void _3d_engine_project_in_camera(
+    _3D_Camera *camera,
+    double *xyz,
+    uint32_t xyzTotal,
+    double **retXy,
+    double **retDepth,
+    bool **retInside)
+{
+    uint32_t c1, c2, c3; //三种step的计数
+    double *xy;
+    double *depth;
+    bool *inside;
+    //内存分配
+    xy = (double *)calloc(xyzTotal * 2, sizeof(double));
+    depth = (double *)calloc(xyzTotal, sizeof(double));
+    inside = (bool *)calloc(xyzTotal, sizeof(bool));
+    //处理每一个点
+    for (c1 = c2 = c3 = 0; c1 < xyzTotal; c1 += 1, c2 += 2, c3 += 3)
+    {
+        //根据相机参数进行透视投影
+        inside[c1] = _3d_matrix_project_calculate(
+            camera->openAngle,
+            &xyz[c3],
+            camera->ar,
+            camera->near,
+            camera->far,
+            &xy[c2],
+            &depth[c1]);
+        //由于投影矩阵计算时是假设屏幕高为2(继而宽为2ar)的情况下计算,这里需对坐标进行比例恢复
+        xy[c2] = xy[c2] / (2 * camera->ar) * camera->width;
+        xy[c2 + 1] = xy[c2 + 1] / 2 * camera->height;
+        // //把坐标原点移动到屏幕中心
+        xy[c2] += camera->width / 2;
+        xy[c2 + 1] += camera->height / 2;
+    }
+    //返回
+    *retXy = xy;
+    *retDepth = depth;
+    *retInside = inside;
+}
+
+static void _printf(double *buff, int step, int len)
+{
+    int i, j;
+    for (i = 0; i < len; i++)
+    {
+        for (j = 0; j < step; j++)
+            printf("%.2lf ", buff[i * step + j]);
+        printf("// ");
+    }
+    printf("\r\n");
+}
+
 // 相机抓拍,照片缓存在 camera->photoMap
 void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 {
-    ;
+    double *xyz;       //坐标数组
+    uint32_t xyzTotal; //坐标点总数
+    double *xy;
+    double *depth;
+    bool *inside;
+
+    double *xyzLabel;       //注释坐标数组
+    uint32_t xyzLabelTotal; //注释坐标点总数
+    double *xyLabel;
+    double *depthLabel;
+    bool *insideLabel;
+
+    _3D_Unit *unit;
+    _3D_Net *net;
+    _3D_Label *label;
+
+    uint32_t count;
+    int32_t xyStart[2], xyEnd[2];
+
+    //遍历模型链表
+    unit = engine->unit;
+    while (unit)
+    {
+        //清空可能分配内存的指针
+        xyz = xyzLabel = NULL;
+        xy = xyLabel = NULL;
+        depth = depthLabel = NULL;
+        inside = insideLabel = NULL;
+
+        //获取模型身上每一个点的真实三维坐标
+        _3d_engine_model_location(unit, &xyz, &xyzTotal, &xyzLabel, &xyzLabelTotal);
+
+        //坐标点相对于相机的位置变化
+        if (xyz && xyzTotal > 0)
+            _3d_engine_location_in_camera(camera, xyz, xyzTotal);
+        if (xyzLabel && xyzLabelTotal > 0)
+            _3d_engine_location_in_camera(camera, xyzLabel, xyzLabelTotal);
+
+        //透视投影三维坐标点到相机的二维平面,得到二维坐标点信息
+        if (xyz && xyzTotal > 0)
+            _3d_engine_project_in_camera(camera, xyz, xyzTotal, &xy, &depth, &inside);
+        if (xyzLabel && xyzLabelTotal > 0)
+            _3d_engine_project_in_camera(camera, xyzLabel, xyzLabelTotal, &xyLabel, &depthLabel, &insideLabel);
+
+        //画模型连线关系画线
+        net = unit->model->net;
+        if (xy && inside && xyzTotal > 0 && net)
+        {
+            //遍历net链表
+            while (net)
+            {
+                //src点和所有dist点连线
+                for (count = 0; count < net->pDistCount; count++)
+                {
+                    //注意这里转换为int32_t类型、数组计数要*2
+                    xyStart[0] = (int32_t)xy[net->pSrc * 2];
+                    xyStart[1] = (int32_t)xy[net->pSrc * 2 + 1];
+                    xyEnd[0] = (int32_t)xy[net->pDist[count] * 2];
+                    xyEnd[1] = (int32_t)xy[net->pDist[count] * 2 + 1];
+                    //检查点是否在屏幕内,且屏幕内的点优先作为xyStart[2]
+                    if (inside[net->pSrc])
+                        _2d_draw_line(
+                            camera->photoMap, camera->width, camera->height,
+                            xyStart, xyEnd,
+                            net->rgbColor, 1);
+                    else if (inside[net->pDist[count]])
+                        _2d_draw_line(
+                            camera->photoMap, camera->width, camera->height,
+                            xyEnd, xyStart,
+                            net->rgbColor, 1);
+                }
+                //下一个
+                net = net->next;
+            }
+        }
+
+        //画模型注释
+        label = unit->model->label;
+        if (xyLabel && insideLabel && xyzLabelTotal > 0 && label)
+        {
+            count = 0;
+            //遍历net链表
+            while (label && count < xyzLabelTotal)
+            {
+                xyStart[0] = (int32_t)xyLabel[count];
+                xyStart[1] = (int32_t)xyLabel[count] + 1;
+                //画点
+                _2d_draw_dot(
+                    camera->photoMap, camera->width, camera->height,
+                    xyStart, label->rgbColor, 1);
+                //画label
+                ;
+                //下一个
+                label = label->next;
+                count += 1;
+            }
+        }
+
+        //内存回收
+        if (xyz)
+            free(xyz);
+        if (xy)
+            free(xy);
+        if (depth)
+            free(depth);
+        if (inside)
+            free(inside);
+        if (xyzLabel)
+            free(xyzLabel);
+        if (xyLabel)
+            free(xyLabel);
+        if (depthLabel)
+            free(depthLabel);
+        if (insideLabel)
+            free(insideLabel);
+
+        //下一个
+        unit = unit->next;
+    }
 }
 
 // 开始
@@ -222,11 +493,12 @@ void _3d_engine_release(_3D_Engine **engine)
         if ((*engine)->unit)
         {
             unitNext = (*engine)->unit;
-            do{
+            do
+            {
                 unit = unitNext;
                 unitNext = unitNext->next;
                 free(unit);
-            }while(unitNext);
+            } while (unitNext);
         }
         free(*engine);
         *engine = NULL;

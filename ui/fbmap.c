@@ -13,7 +13,7 @@
 #include <sys/mman.h>
 #include <linux/fb.h>
 
-#define FB_PATH "/dev/fb0"
+#include "fbmap.h"
 
 typedef struct
 {
@@ -92,11 +92,14 @@ int fb_init(void)
  *  offsetX, offsetY: 屏幕起始位置
  *  width, height: 图像宽高
  */
-void fb_output(unsigned char *data, int offsetX, int offsetY, int width, int height)
+void fb_output(uint8_t *data, uint32_t offsetX, uint32_t offsetY, uint32_t width, uint32_t height)
 {
     int x, y, offset;
     //初始化检查
     if (fb_init())
+        return;
+    //参数检查
+    if (!data || width < 1 || height < 1)
         return;
     //起始坐标限制
     if (offsetX < 0)

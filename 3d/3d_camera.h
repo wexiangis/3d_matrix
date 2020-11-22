@@ -57,6 +57,9 @@ _3D_Camera *_3d_camera_init(
 // 相机重置
 void _3d_camera_reset(_3D_Camera *camera);
 
+// 清空照片
+void _3d_camera_photo_clear(_3D_Camera *camera, uint32_t rgbColor);
+
 // 相机参数备份
 void _3d_camera_backup(_3D_Camera *camera);
 
