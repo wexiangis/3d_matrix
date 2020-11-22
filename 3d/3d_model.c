@@ -17,7 +17,7 @@
  * 
  *  返回: NULL/失败
  */
-_3D_Model *_3d_model_init(uint32_t pCount, double x, double y, double z, uint32_t rgbColor, ...)
+_3D_Model *_3d_model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...)
 {
     _3D_Model *model;
     va_list ap;
@@ -28,7 +28,7 @@ _3D_Model *_3d_model_init(uint32_t pCount, double x, double y, double z, uint32_
     //基本参数和内存准备
     model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
     model->pCount = pCount;
-    model->xyz = (double *)calloc(pCount * 3, sizeof(double));
+    model->xyz = (float *)calloc(pCount * 3, sizeof(float));
     model->rgbColor = (uint32_t *)calloc(pCount, sizeof(uint32_t));
     //记录第一个点
     model->xyz[xyZCount++] = x;
@@ -104,7 +104,7 @@ void _3d_model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint3
  *      label: 注释内容
  *      x, y, z: 位置
  */
-void _3d_model_label_add(_3D_Model *model, uint32_t rgbColor, double x, double y, double z, char *text)
+void _3d_model_label_add(_3D_Model *model, uint32_t rgbColor, float x, float y, float z, char *text)
 {
     _3D_Label *label, *tmpLabel;
     //基本参数和内存准备
@@ -136,9 +136,9 @@ _3D_Model *_3d_model_copy(_3D_Model *model)
     _3D_Model *model2 = (_3D_Model *)calloc(1, sizeof(_3D_Model));
     //点数组拷贝
     model2->pCount = model->pCount;
-    model2->xyz = (double *)calloc(model2->pCount * 3, sizeof(double));
+    model2->xyz = (float *)calloc(model2->pCount * 3, sizeof(float));
     model2->rgbColor = (uint32_t *)calloc(model2->pCount, sizeof(uint32_t));
-    memcpy(model2->xyz, model->xyz, sizeof(double) * 3 * model2->pCount);
+    memcpy(model2->xyz, model->xyz, sizeof(float) * 3 * model2->pCount);
     memcpy(model2->rgbColor, model->rgbColor, sizeof(uint32_t) * model2->pCount);
     //net链表拷贝
     if (model->net)
@@ -168,7 +168,7 @@ _3D_Model *_3d_model_copy(_3D_Model *model)
         label2 = model2->label = (_3D_Label *)calloc(1, sizeof(_3D_Label));
         do
         {
-            memcpy(label2->xyz, label->xyz, sizeof(double) * 3);
+            memcpy(label2->xyz, label->xyz, sizeof(float) * 3);
             label2->rgbColor = label->rgbColor;
             label2->text = (char *)calloc(strlen(label->text), sizeof(char));
             strcpy(label2->text, label->text);

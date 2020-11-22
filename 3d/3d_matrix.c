@@ -14,10 +14,10 @@
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[3])
+void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
-    double x, y, z;
-    double Xrad, Yrad, Zrad;
+    float x, y, z;
+    float Xrad, Yrad, Zrad;
     //参数检查
     if (roll_xyz == NULL || xyz == NULL || retXyz == NULL)
         return;
@@ -85,16 +85,16 @@ void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[
  *  返回: false/不再相框内  true/在相框内
  */
 bool _3d_matrix_project_calculate(
-    double openAngle,
-    double xyz[3],
-    double ar,
+    float openAngle,
+    float xyz[3],
+    float ar,
     int nearZ,
     int farZ,
-    double *retXY,
-    double *retDepth)
+    float *retXY,
+    float *retDepth)
 {
-    double hMax, hMin, wMax, wMin;
-    double retX, retY, retZ;
+    float hMax, hMin, wMax, wMin;
+    float retX, retY, retZ;
 
     //快速检查
     if (openAngle >= 360 || openAngle < 1)

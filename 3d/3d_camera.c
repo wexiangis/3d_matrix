@@ -18,11 +18,11 @@
 _3D_Camera *_3d_camera_init(
     uint32_t width,
     uint32_t height,
-    double openAngle,
+    float openAngle,
     uint32_t near,
     uint32_t far,
-    double *xyz,
-    double *roll_xyz)
+    float *xyz,
+    float *roll_xyz)
 {
     _3D_Camera *camera;
     //参数检查
@@ -32,7 +32,7 @@ _3D_Camera *_3d_camera_init(
     camera = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     camera->width = width;
     camera->height = height;
-    camera->ar = (double)width / height;
+    camera->ar = (float)width / height;
     camera->openAngle = openAngle;
     camera->near = near;
     camera->far = far;
@@ -41,9 +41,9 @@ _3D_Camera *_3d_camera_init(
     camera->photoMap = (uint8_t *)calloc(camera->photoSize, sizeof(uint8_t));
     //初始状态
     if (xyz)
-        memcpy(camera->xyz, xyz, sizeof(double) * 3);
+        memcpy(camera->xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
-        memcpy(camera->roll_xyz, roll_xyz, sizeof(double) * 3);
+        memcpy(camera->roll_xyz, roll_xyz, sizeof(float) * 3);
     //备份
     camera->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera->backup, camera, sizeof(_3D_Camera));
@@ -110,7 +110,7 @@ void _3d_camera_release(_3D_Camera **camera)
 /* ---------- 运动 ---------- */
 
 // 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
-void _3d_camera_roll(_3D_Camera *camera, double x, double y, double z)
+void _3d_camera_roll(_3D_Camera *camera, float x, float y, float z)
 {
     camera->roll_xyz[0] += x;
     camera->roll_xyz[1] += y;
@@ -133,7 +133,7 @@ void _3d_camera_roll(_3D_Camera *camera, double x, double y, double z)
 }
 
 // 相机3轴平移, 增量式, 基于空间坐标系
-void _3d_camera_mov(_3D_Camera *camera, double x, double y, double z)
+void _3d_camera_mov(_3D_Camera *camera, float x, float y, float z)
 {
     camera->xyz[0] += x;
     camera->xyz[1] += y;
@@ -141,7 +141,7 @@ void _3d_camera_mov(_3D_Camera *camera, double x, double y, double z)
 }
 
 // 相机3轴平移, 增量式, 基于自身坐标系
-void _3d_camera_mov2(_3D_Camera *camera, double x, double y, double z)
+void _3d_camera_mov2(_3D_Camera *camera, float x, float y, float z)
 {
     ;
 }
@@ -149,19 +149,19 @@ void _3d_camera_mov2(_3D_Camera *camera, double x, double y, double z)
 /* ---------- 特效 ---------- */
 
 // 缩放, zoom为1时原始比例, 大于1放大图像, 小于1缩小图像
-void _3d_camera_zoom(_3D_Camera *camera, double zoom)
+void _3d_camera_zoom(_3D_Camera *camera, float zoom)
 {
     ;
 }
 
 // 锁定目标, 之后 _3d_camera_roll 将变成完全绕目标转动
-void _3d_camera_lock(_3D_Camera *camera, double *xyz)
+void _3d_camera_lock(_3D_Camera *camera, float *xyz)
 {
-    memcpy(camera->lock_xyz, xyz, sizeof(double) * 3);
+    memcpy(camera->lock_xyz, xyz, sizeof(float) * 3);
 }
 
 // 解除锁定
 void _3d_camera_unlock(_3D_Camera *camera)
 {
-    memset(camera->lock_xyz, 0, sizeof(double) * 3);
+    memset(camera->lock_xyz, 0, sizeof(float) * 3);
 }

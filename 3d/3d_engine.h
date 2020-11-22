@@ -14,28 +14,28 @@
 // 单元的运动控制状态
 typedef struct _3DSport
 {
-    double xyz[3];      //质心在空间中的位置
-    double roll_xyz[3]; //绕自身坐标系转角(单位:度)
-    double speed[3];       //速度向量,相对空间坐标系,单位:点/秒
-    double speed_angle[3]; //角速度向量,相对自身坐标系,单位:度/秒
+    float xyz[3];         //质心在空间中的位置
+    float roll_xyz[3];    //绕自身坐标系转角(单位:度)
+    float speed[3];       //速度向量,相对空间坐标系,单位:点/秒
+    float speed_angle[3]; //角速度向量,相对自身坐标系,单位:度/秒
     // struct _3DSport *next;   //用链表来记录历史状态
 } _3D_Sport;
 
 // 空间中的物体单元
 typedef struct _3DUnit
 {
+    _3D_Sport *sport; //运动状态
     _3D_Model *model; //模型(该参数在这里是只读的,所以可以把一个模型赋值给多个单元)
-    _3D_Sport sport;  //运动状态
     struct _3DUnit *next;
 } _3D_Unit;
 
 // 主结构体
 typedef struct _3DEngine
 {
-    _3D_Unit *unit;         //单元链表
-    uint32_t intervalMs;    //刷新/计算间隔,单位:ms
-    uint32_t xyzSize[3];    //xyz空间长度
-    int32_t xyzRange[3][2]; //空间范围 [0]/min [1]/max
+    _3D_Unit *unit;       //单元链表
+    uint32_t intervalMs;  //刷新/计算间隔,单位:ms
+    float xyzSize[3];     //xyz空间长度
+    float xyzRange[3][2]; //空间范围 [0]/min [1]/max
     pthread_t th;
     pthread_mutex_t lock;
     bool run;        //开/停标志
@@ -48,7 +48,7 @@ typedef struct _3DEngine
  *      intervalMs: 刷新间隔,单位:ms
  *      xSize, ySize, zSize: 空间场地大小,其中点(xSize/2, ySize/2, zSize/2)的位置将作为空间原点
  */
-_3D_Engine *_3d_engine_init(uint32_t intervalMs, uint32_t xSize, uint32_t ySize, uint32_t zSize);
+_3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize);
 
 /*
  *  添加模型
@@ -58,7 +58,7 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, uint32_t xSize, uint32_t ySize,
  * 
  *  返回: 模型运动控制器,可进行异步控制、获取模型的运动状态
  */
-_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, double *xyz, double *roll_xyz);
+_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz);
 
 // 模型移除
 void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport);

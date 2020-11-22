@@ -35,8 +35,8 @@ int main(int argc, char **argv)
     //终端输入
     char input[16];
     int fd;
-    double mov_xyz[3];
-    double roll_xyz[3];
+    float mov_xyz[3];
+    float roll_xyz[3];
 
     //打开终端
     if (argc > 1)
@@ -50,16 +50,27 @@ int main(int argc, char **argv)
     engine_init();
 
     //引擎启动
-    // _3d_engine_start (engine);
+    _3d_engine_start (engine);
+
+    //给模型1 x轴 的初始速度,单位:点/秒
+    // sport1->speed[0] = 50;
+    //给模型2 z轴 的初始速度,单位:点/秒
+    // sport2->speed[2] = 50;
+
+    //给模型1 x轴 的旋转初始速度,单位:度/秒
+    sport1->speed_angle[0] = 90;
+    //给模型2 z轴 的旋转初始速度,单位:度/秒
+    sport2->speed_angle[2] = 90;
+
 
     while (1)
     {
         delayms(INTERVAL_MS);
 
         //清空相机照片
-        _3d_camera_photo_clear(camera1, 0x440000);
-        _3d_camera_photo_clear(camera2, 0x004400);
-        _3d_camera_photo_clear(camera3, 0x000044);
+        _3d_camera_photo_clear(camera1, 0x220000);
+        _3d_camera_photo_clear(camera2, 0x002200);
+        _3d_camera_photo_clear(camera3, 0x000022);
 
         //相机抓拍
         _3d_engine_photo(engine, camera1);
@@ -74,9 +85,10 @@ int main(int argc, char **argv)
         //读取终端输入
         memset(input, 0, sizeof(input));
         if (read(fd, input, sizeof(input)) > 0)
+        // if (scanf("%s", input) > 0)
         {
-            memset(mov_xyz, 0, sizeof(double) * 3);
-            memset(roll_xyz, 0, sizeof(double) * 3);
+            memset(mov_xyz, 0, sizeof(float) * 3);
+            memset(roll_xyz, 0, sizeof(float) * 3);
 
             //平移
             if (input[0] == '1')
@@ -129,17 +141,17 @@ int main(int argc, char **argv)
 void engine_init(void)
 {
     //相机初始位置和转角
-    double camera1_xyz[3] = {-120, 0, 0};
-    double camera2_xyz[3] = {0, 120, 0};
-    double camera3_xyz[3] = {0, 0, 120};
-    double camera1_roll_xyz[3] = {0, 0, 0};
-    double camera2_roll_xyz[3] = {0, 0, 90};
-    double camera3_roll_xyz[3] = {0, -90, 0};
+    float camera1_xyz[3] = {-120, 0, 0};
+    float camera2_xyz[3] = {0, 120, 0};
+    float camera3_xyz[3] = {0, 0, 120};
+    float camera1_roll_xyz[3] = {0, 0, 0};
+    float camera2_roll_xyz[3] = {0, 0, 90};
+    float camera3_roll_xyz[3] = {0, -90, 0};
     //模型初始位置和转角
-    double model1_xyz[3] = {-15, -30, 0};
-    double model2_xyz[3] = {15, 30, 0};
-    double model1_roll_xyz[3] = {0, 0, 0};
-    double model2_roll_xyz[3] = {0, 0, 0};
+    float model1_xyz[3] = {-15, -30, 0};
+    float model2_xyz[3] = {15, 30, 0};
+    float model1_roll_xyz[3] = {0, 0, 0};
+    float model2_roll_xyz[3] = {0, 0, 0};
 
     //相机初始化: 300x300窗口,开角90度,近远范围(5,1000)
     camera1 = _3d_camera_init(300, 300, 90, 5, 1000, camera1_xyz, camera1_roll_xyz);
@@ -160,7 +172,7 @@ void engine_init(void)
     _3d_model_label_add(model0, 0x008000, 0.0, 100.0, 0.0, "Y");
     _3d_model_label_add(model0, 0x000080, 0.0, 0.0, 100.0, "Z");
 
-    //模型1初始化: 长方体 (注意!! 变长参数中的double类型一定要0.0格式)
+    //模型1初始化: 长方体 (注意!! 变长参数中的float类型一定要0.0格式)
     model1 = _3d_model_init(8,
         10.0, 20.0, 30.0, 0xFFFFFF,
         10.0, -20.0, 30.0, 0xFFFFFF,
@@ -177,16 +189,16 @@ void engine_init(void)
     _3d_model_net_add(model1, 0xFFFFFF, 4, 2, 5, 7);
     _3d_model_net_add(model1, 0xFFFFFF, 5, 1, 6);
     _3d_model_net_add(model1, 0xFFFFFF, 6, 1, 7);
-    _3d_model_label_add(model1, 0xFFFFFF, 10.0, 20.0, 30.0, "A"); //注释
-    _3d_model_label_add(model1, 0xFFFFFF, 10.0, -20.0, 30.0, "B");
-    _3d_model_label_add(model1, 0xFFFFFF, 10.0, -20.0, -30.0, "C");
-    _3d_model_label_add(model1, 0xFFFFFF, 10.0, 20.0, -30.0, "D");
-    _3d_model_label_add(model1, 0xFFFFFF, -10.0, 20.0, -30.0, "E");
-    _3d_model_label_add(model1, 0xFFFFFF, -10.0, 20.0, 30.0, "F");
-    _3d_model_label_add(model1, 0xFFFFFF, -10.0, -20.0, 30.0, "G");
-    _3d_model_label_add(model1, 0xFFFFFF, -10.0, -20.0, -30.0, "H");
+    _3d_model_label_add(model1, 0xFF0000, 10.0, 20.0, 30.0, "A"); //注释
+    _3d_model_label_add(model1, 0x00FF00, 10.0, -20.0, 30.0, "B");
+    _3d_model_label_add(model1, 0x0000FF, 10.0, -20.0, -30.0, "C");
+    _3d_model_label_add(model1, 0xFFFF00, 10.0, 20.0, -30.0, "D");
+    _3d_model_label_add(model1, 0x00FFFF, -10.0, 20.0, -30.0, "E");
+    _3d_model_label_add(model1, 0xFF00FF, -10.0, 20.0, 30.0, "F");
+    _3d_model_label_add(model1, 0xFF8000, -10.0, -20.0, 30.0, "G");
+    _3d_model_label_add(model1, 0x00FF80, -10.0, -20.0, -30.0, "H");
 
-    //模型2初始化: 三棱柱 (注意!! 变长参数中的double类型一定要0.0格式)
+    //模型2初始化: 三棱柱 (注意!! 变长参数中的float类型一定要0.0格式)
     model2 = _3d_model_init(6,
         20.0, 0.0, 20.0, 0xFF0000,
         -10.0, 17.3, 20.0, 0x00FF00,
@@ -206,8 +218,8 @@ void engine_init(void)
     _3d_model_label_add(model2, 0x00FFFF, 20.0, 0.0, -20.0, "E");
     _3d_model_label_add(model2, 0xFF00FF, -10.0, 17.3, -20.0, "F");
 
-    //引擎初始化: 建立1000x1000x1000空间
-    engine = _3d_engine_init(ENGINE_INTERVAL_MS, 1000, 1000, 1000);
+    //引擎初始化: 建立 300 x 300 x 300 空间
+    engine = _3d_engine_init(ENGINE_INTERVAL_MS, 250, 250, 250);
 
     //往引擎添加模型,得到模型的运动控制器
     sport0 = _3d_engine_model_add(engine, model0, NULL, NULL); //默认位置空间原点处

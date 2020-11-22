@@ -20,7 +20,7 @@ typedef struct _3DNet
 // 点注释
 typedef struct _3DLabel
 {
-    double xyz[3];     //位置
+    float xyz[3];      //位置
     char *text;        //注释内容
     uint32_t rgbColor; //文字颜色
     struct _3DLabel *next;
@@ -30,7 +30,7 @@ typedef struct _3DLabel
 typedef struct _3DModel
 {
     uint32_t pCount;     //点的数量
-    double *xyz;         //点数组(内存长度为 sizeof(double)*3*pCount)
+    float *xyz;          //点数组(内存长度为 sizeof(float)*3*pCount)
     uint32_t *rgbColor;  //点颜色数组(内存长度为 sizeof(uint32_t)*pCount)
     _3D_Net *net;        //连线关系链表
     _3D_Label *label;    //注释链表
@@ -46,7 +46,7 @@ typedef struct _3DModel
  * 
  *  返回: NULL/失败
  */
-_3D_Model *_3d_model_init(uint32_t pCount, double x, double y, double z, uint32_t rgbColor, ...);
+_3D_Model *_3d_model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...);
 
 /*
  *  连线关系,以 pSrc 作为顶点,和多个 pDist 点相连
@@ -66,7 +66,7 @@ void _3d_model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint3
  *      label: 注释内容
  *      x, y, z: 位置
  */
-void _3d_model_label_add(_3D_Model *model, uint32_t rgbColor, double x, double y, double z, char *text);
+void _3d_model_label_add(_3D_Model *model, uint32_t rgbColor, float x, float y, float z, char *text);
 
 // 模型拷贝
 _3D_Model *_3d_model_copy(_3D_Model *model);

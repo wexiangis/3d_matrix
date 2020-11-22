@@ -13,7 +13,7 @@
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[3]);
+void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
@@ -30,12 +30,12 @@ void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[
  *  返回: 0/不再相框内  1/在相框内
  */
 bool _3d_matrix_project_calculate(
-    double openAngle,
-    double xyz[3],
-    double ar,
+    float openAngle,
+    float xyz[3],
+    float ar,
     int nearZ,
     int farZ,
-    double *retXY,
-    double *retDepth);
+    float *retXY,
+    float *retDepth);
 
 #endif

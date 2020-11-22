@@ -7,9 +7,6 @@
 #include "3d_engine.h"
 #include "2d_draw.h"
 
-#define _3D_ENGINE_PI 3.1415926535897
-#define _3D_ENGINE_2PI (_3D_ENGINE_PI * 2)
-
 // 延时
 #include <sys/time.h>
 void engine_delayus(unsigned int us)
@@ -53,10 +50,10 @@ static void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
     {
         sport->roll_xyz[count] += sport->speed_angle[count] * engine->intervalMs / 1000;
         //范围限制
-        if (sport->roll_xyz[count] > _3D_ENGINE_2PI)
-            sport->roll_xyz[count] -= _3D_ENGINE_2PI;
-        else if (sport->roll_xyz[count] < -_3D_ENGINE_2PI)
-            sport->roll_xyz[count] += _3D_ENGINE_2PI;
+        if (sport->roll_xyz[count] > 360)
+            sport->roll_xyz[count] -= 360;
+        else if (sport->roll_xyz[count] < -360)
+            sport->roll_xyz[count] += 360;
     }
 }
 
@@ -78,7 +75,7 @@ static void _3d_engine_thread(void *argv)
         while (unit)
         {
             //更新运动状态
-            _3d_engine_sport(engine, &unit->sport);
+            _3d_engine_sport(engine, unit->sport);
             //下一个
             unit = unit->next;
         }
@@ -92,7 +89,7 @@ static void _3d_engine_thread(void *argv)
  *      intervalMs: 刷新间隔,单位:ms
  *      xSize, ySize, zSize: 空间场地大小,其中点(xSize/2, ySize/2, zSize/2)的位置将作为空间原点
  */
-_3D_Engine *_3d_engine_init(uint32_t intervalMs, uint32_t xSize, uint32_t ySize, uint32_t zSize)
+_3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize)
 {
     _3D_Engine *engine;
     //参数检查
@@ -103,12 +100,12 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, uint32_t xSize, uint32_t ySize,
     engine->xyzSize[0] = xSize;
     engine->xyzSize[1] = ySize;
     engine->xyzSize[2] = zSize;
-    engine->xyzRange[0][0] = xSize / 2;
-    engine->xyzRange[0][1] = -xSize / 2;
-    engine->xyzRange[1][0] = ySize / 2;
-    engine->xyzRange[1][1] = -ySize / 2;
-    engine->xyzRange[2][0] = zSize / 2;
-    engine->xyzRange[2][1] = -zSize / 2;
+    engine->xyzRange[0][0] = -(xSize / 2);
+    engine->xyzRange[0][1] = xSize / 2;
+    engine->xyzRange[1][0] = -(ySize / 2);
+    engine->xyzRange[1][1] = ySize / 2;
+    engine->xyzRange[2][0] = -(zSize / 2);
+    engine->xyzRange[2][1] = zSize / 2;
     pthread_mutex_init(&engine->lock, NULL);
     pthread_create(&engine->th, NULL, (void *)&_3d_engine_thread, engine);
     return engine;
@@ -122,7 +119,7 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, uint32_t xSize, uint32_t ySize,
  * 
  *  返回: 模型运动控制器,可用于移除时使用
  */
-_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, double *xyz, double *roll_xyz)
+_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz)
 {
     _3D_Unit *unit, *tmpUnit;
     //参数检查
@@ -130,12 +127,14 @@ _3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, double *xy
         return NULL;
     //参数初始化
     unit = (_3D_Unit *)calloc(1, sizeof(_3D_Unit));
+    unit->sport = (_3D_Sport *)calloc(1, sizeof(_3D_Sport));
     unit->model = model;
     if (xyz)
-        memcpy(unit->sport.xyz, xyz, sizeof(double) * 3);
+        memcpy(unit->sport->xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
-        memcpy(unit->sport.roll_xyz, roll_xyz, sizeof(double) * 3);
+        memcpy(unit->sport->roll_xyz, roll_xyz, sizeof(float) * 3);
     //加入链表
+    pthread_mutex_lock(&engine->lock);
     if (engine->unit == NULL)
         engine->unit = unit;
     else
@@ -145,7 +144,8 @@ _3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, double *xy
             tmpUnit = tmpUnit->next;
         tmpUnit->next = unit;
     }
-    return &unit->sport;
+    pthread_mutex_unlock(&engine->lock);
+    return unit->sport;
 }
 
 // 模型移除
@@ -155,11 +155,12 @@ void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
     if (engine->unit)
     {
         //是第一个
-        if (&engine->unit->sport == sport)
+        if (engine->unit->sport == sport)
         {
             pthread_mutex_lock(&engine->lock);
             unit = engine->unit;
             engine->unit = engine->unit->next;
+            free(unit->sport);
             free(unit);
             pthread_mutex_unlock(&engine->lock);
         }
@@ -169,16 +170,17 @@ void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
             //检索
             unit = engine->unit;
             unitNext = engine->unit->next;
-            while (unitNext && &unitNext->sport != sport)
+            while (unitNext && unitNext->sport != sport)
             {
                 unit = unit->next;
                 unitNext = unit->next;
             }
             //移除
-            if (unitNext && (&unitNext->sport) == sport)
+            if (unitNext && unitNext->sport == sport)
             {
                 pthread_mutex_lock(&engine->lock);
                 unit->next = unitNext->next;
+                free(unitNext->sport);
                 free(unitNext);
                 pthread_mutex_unlock(&engine->lock);
             }
@@ -196,27 +198,27 @@ void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
  */
 static void _3d_engine_model_location(
     _3D_Unit *unit,
-    double **retXyz, uint32_t *retXyzTotal,
-    double **retXyzLabel, uint32_t *retXyzLabelTotal)
+    float **retXyz, uint32_t *retXyzTotal,
+    float **retXyzLabel, uint32_t *retXyzLabelTotal)
 {
-    double *xyz = NULL;      //三维坐标数组
-    double *xyzLabel = NULL; //注释坐标数组
-    uint32_t xyzCount;       //坐标数组计数
+    float *xyz = NULL;      //三维坐标数组
+    float *xyzLabel = NULL; //注释坐标数组
+    uint32_t xyzCount;      //坐标数组计数
     _3D_Label *label;
     //点数组分配内存
-    xyz = (double *)calloc(unit->model->pCount * 3, sizeof(double));
+    xyz = (float *)calloc(unit->model->pCount * 3, sizeof(float));
     //根据sport参数对这些三维坐标进行旋转和平移
     for (xyzCount = 0; xyzCount < unit->model->pCount * 3;)
     {
         //先旋转
         _3d_matrix_roll_calculate(
-            unit->sport.roll_xyz,
+            unit->sport->roll_xyz,
             &unit->model->xyz[xyzCount],
             &xyz[xyzCount]);
         //再平移
-        xyz[xyzCount++] += unit->sport.xyz[0];
-        xyz[xyzCount++] += unit->sport.xyz[1];
-        xyz[xyzCount++] += unit->sport.xyz[2];
+        xyz[xyzCount++] += unit->sport->xyz[0];
+        xyz[xyzCount++] += unit->sport->xyz[1];
+        xyz[xyzCount++] += unit->sport->xyz[2];
     }
     //返回
     *retXyz = xyz;
@@ -226,19 +228,19 @@ static void _3d_engine_model_location(
     if (label && unit->model->labelCount > 0)
     {
         //点数组分配内存
-        xyzLabel = (double *)calloc(unit->model->labelCount * 3, sizeof(double));
+        xyzLabel = (float *)calloc(unit->model->labelCount * 3, sizeof(float));
         //根据sport参数对这些三维坐标进行旋转和平移
         for (xyzCount = 0; xyzCount < unit->model->labelCount * 3 && label;)
         {
             //先旋转
             _3d_matrix_roll_calculate(
-                unit->sport.roll_xyz,
+                unit->sport->roll_xyz,
                 label->xyz,
                 &xyzLabel[xyzCount]);
             //再平移
-            xyzLabel[xyzCount++] += unit->sport.xyz[0];
-            xyzLabel[xyzCount++] += unit->sport.xyz[1];
-            xyzLabel[xyzCount++] += unit->sport.xyz[2];
+            xyzLabel[xyzCount++] += unit->sport->xyz[0];
+            xyzLabel[xyzCount++] += unit->sport->xyz[1];
+            xyzLabel[xyzCount++] += unit->sport->xyz[2];
             //链表下一个
             label = label->next;
         }
@@ -260,9 +262,9 @@ static void _3d_engine_model_location(
  *      xyz: 坐标点数组
  *      xyzTotal: 数组中坐标点的个数
  */
-static void _3d_engine_location_in_camera(_3D_Camera *camera, double *xyz, uint32_t xyzTotal)
+static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32_t xyzTotal)
 {
-    double roll_xyz[3];
+    float roll_xyz[3];
     uint32_t xyzCount;
     //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
     for (xyzCount = 0; xyzCount < xyzTotal * 3;)
@@ -293,19 +295,19 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, double *xyz, uint3
  */
 static void _3d_engine_project_in_camera(
     _3D_Camera *camera,
-    double *xyz,
+    float *xyz,
     uint32_t xyzTotal,
-    double **retXy,
-    double **retDepth,
+    float **retXy,
+    float **retDepth,
     bool **retInside)
 {
     uint32_t c1, c2, c3; //三种step的计数
-    double *xy;
-    double *depth;
+    float *xy;
+    float *depth;
     bool *inside;
     //内存分配
-    xy = (double *)calloc(xyzTotal * 2, sizeof(double));
-    depth = (double *)calloc(xyzTotal, sizeof(double));
+    xy = (float *)calloc(xyzTotal * 2, sizeof(float));
+    depth = (float *)calloc(xyzTotal, sizeof(float));
     inside = (bool *)calloc(xyzTotal, sizeof(bool));
     //处理每一个点
     for (c1 = c2 = c3 = 0; c1 < xyzTotal; c1 += 1, c2 += 2, c3 += 3)
@@ -332,7 +334,7 @@ static void _3d_engine_project_in_camera(
     *retInside = inside;
 }
 
-static void _printf(double *buff, int step, int len)
+static void _printf(float *buff, int step, int len)
 {
     int i, j;
     for (i = 0; i < len; i++)
@@ -347,16 +349,16 @@ static void _printf(double *buff, int step, int len)
 // 相机抓拍,照片缓存在 camera->photoMap
 void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 {
-    double *xyz;       //坐标数组
+    float *xyz;        //坐标数组
     uint32_t xyzTotal; //坐标点总数
-    double *xy;
-    double *depth;
+    float *xy;
+    float *depth;
     bool *inside;
 
-    double *xyzLabel;       //注释坐标数组
+    float *xyzLabel;        //注释坐标数组
     uint32_t xyzLabelTotal; //注释坐标点总数
-    double *xyLabel;
-    double *depthLabel;
+    float *xyLabel;
+    float *depthLabel;
     bool *insideLabel;
 
     _3D_Unit *unit;
@@ -499,6 +501,7 @@ void _3d_engine_release(_3D_Engine **engine)
             {
                 unit = unitNext;
                 unitNext = unitNext->next;
+                free(unit->sport);
                 free(unit);
             } while (unitNext);
         }
