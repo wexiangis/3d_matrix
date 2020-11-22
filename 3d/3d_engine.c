@@ -202,7 +202,7 @@ static void _3d_engine_model_location(
     double *xyz = NULL;      //三维坐标数组
     double *xyzLabel = NULL; //注释坐标数组
     uint32_t xyzCount;       //坐标数组计数
-    _3D_Label *label = unit->model->label;
+    _3D_Label *label;
     //点数组分配内存
     xyz = (double *)calloc(unit->model->pCount * 3, sizeof(double));
     //根据sport参数对这些三维坐标进行旋转和平移
@@ -222,6 +222,7 @@ static void _3d_engine_model_location(
     *retXyz = xyz;
     *retXyzTotal = unit->model->pCount;
     //这个模型有 label 链表吗?
+    label = unit->model->label;
     if (label && unit->model->labelCount > 0)
     {
         //点数组分配内存
@@ -268,16 +269,16 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, double *xyz, uint3
     {
         //注意这里要反方向平移
         xyz[xyzCount++] -= camera->xyz[0];
-        xyz[xyzCount++] += camera->xyz[1];
-        xyz[xyzCount++] += camera->xyz[2];
+        xyz[xyzCount++] -= camera->xyz[1];
+        xyz[xyzCount++] -= camera->xyz[2];
     }
     //再把相机自身的旋转转嫁为坐标点相对相机的旋转
     for (xyzCount = 0; xyzCount < xyzTotal * 3; xyzCount += 3)
     {
         //注意这里要反方向旋转
-        roll_xyz[0] = -camera->roll_xyz[0];
-        roll_xyz[1] = -camera->roll_xyz[1];
-        roll_xyz[2] = -camera->roll_xyz[2];
+        roll_xyz[0] = camera->roll_xyz[0];
+        roll_xyz[1] = camera->roll_xyz[1];
+        roll_xyz[2] = camera->roll_xyz[2];
         _3d_matrix_roll_calculate(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
     }
 }
@@ -321,9 +322,9 @@ static void _3d_engine_project_in_camera(
         //由于投影矩阵计算时是假设屏幕高为2(继而宽为2ar)的情况下计算,这里需对坐标进行比例恢复
         xy[c2] = xy[c2] / (2 * camera->ar) * camera->width;
         xy[c2 + 1] = xy[c2 + 1] / 2 * camera->height;
-        // //把坐标原点移动到屏幕中心
-        xy[c2] += camera->width / 2;
-        xy[c2 + 1] += camera->height / 2;
+        //把坐标原点移动到屏幕中心
+        xy[c2] = xy[c2] + camera->width / 2;
+        xy[c2 + 1] = camera->height / 2 - xy[c2 + 1];
     }
     //返回
     *retXy = xy;
@@ -371,6 +372,7 @@ void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
     {
         //清空可能分配内存的指针
         xyz = xyzLabel = NULL;
+        xyzTotal = xyzLabelTotal = 0;
         xy = xyLabel = NULL;
         depth = depthLabel = NULL;
         inside = insideLabel = NULL;
@@ -430,8 +432,8 @@ void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
             //遍历net链表
             while (label && count < xyzLabelTotal)
             {
-                xyStart[0] = (int32_t)xyLabel[count];
-                xyStart[1] = (int32_t)xyLabel[count] + 1;
+                xyStart[0] = (int32_t)xyLabel[count * 2];
+                xyStart[1] = (int32_t)xyLabel[count * 2 + 1];
                 //画点
                 _2d_draw_dot(
                     camera->photoMap, camera->width, camera->height,

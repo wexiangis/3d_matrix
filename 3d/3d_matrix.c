@@ -16,10 +16,15 @@
  */
 void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[3])
 {
+    double x, y, z;
     double Xrad, Yrad, Zrad;
     //参数检查
     if (roll_xyz == NULL || xyz == NULL || retXyz == NULL)
         return;
+    //
+    x = xyz[0];
+    y = xyz[1];
+    z = xyz[2];
     //度转rad
     Xrad = roll_xyz[0] * _3D_MATRIX_PI / 180;
     Yrad = roll_xyz[1] * _3D_MATRIX_PI / 180;
@@ -52,17 +57,17 @@ void _3d_matrix_roll_calculate(double roll_xyz[3], double xyz[3], double retXyz[
     */
 
     retXyz[0] =
-        xyz[0] * cos(Yrad) * cos(Zrad)-
-        xyz[1] * cos(Yrad) * sin(Zrad) +
-        xyz[2] * sin(Yrad);
+        x * cos(Yrad) * cos(Zrad) -
+        y * cos(Yrad) * sin(Zrad) +
+        z * sin(Yrad);
     retXyz[1] =
-        xyz[0] * (sin(Xrad) * sin(Yrad) * cos(Zrad) + cos(Xrad) * sin(Zrad)) -
-        xyz[1] * (sin(Xrad) * sin(Yrad) * sin(Zrad) - cos(Xrad) * cos(Zrad)) -
-        xyz[2] * sin(Xrad) * cos(Yrad);
+        x * (sin(Xrad) * sin(Yrad) * cos(Zrad) + cos(Xrad) * sin(Zrad)) -
+        y * (sin(Xrad) * sin(Yrad) * sin(Zrad) - cos(Xrad) * cos(Zrad)) -
+        z * sin(Xrad) * cos(Yrad);
     retXyz[2] =
-        -xyz[0] * (cos(Xrad) * sin(Yrad) * cos(Zrad) - sin(Xrad) * sin(Zrad)) +
-        xyz[1] * (cos(Xrad) * sin(Yrad) * sin(Zrad) + sin(Xrad) * cos(Zrad)) +
-        xyz[2] * cos(Xrad) * cos(Yrad);
+        -x * (cos(Xrad) * sin(Yrad) * cos(Zrad) - sin(Xrad) * sin(Zrad)) +
+        y * (cos(Xrad) * sin(Yrad) * sin(Zrad) + sin(Xrad) * cos(Zrad)) +
+        z * cos(Xrad) * cos(Yrad);
 }
 
 /*

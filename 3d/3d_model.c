@@ -181,7 +181,7 @@ _3D_Model *_3d_model_copy(_3D_Model *model)
             }
         } while (label);
     }
-    return NULL;
+    return model2;
 }
 
 // 内存销毁

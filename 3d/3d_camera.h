@@ -72,13 +72,13 @@ void _3d_camera_release(_3D_Camera **camera);
 /* ---------- 运动 ---------- */
 
 // 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
-void _3d_camera_roll(_3D_Camera *camera, double *roll_xyz);
+void _3d_camera_roll(_3D_Camera *camera, double x, double y, double z);
 
 // 相机3轴平移, 增量式, 基于空间坐标系
-void _3d_camera_mov(_3D_Camera *camera, double *mov_xyz);
+void _3d_camera_mov(_3D_Camera *camera, double x, double y, double z);
 
 // 相机3轴平移, 增量式, 基于自身坐标系
-void _3d_camera_mov2(_3D_Camera *camera, double *mov_xyz);
+void _3d_camera_mov2(_3D_Camera *camera, double x, double y, double z);
 
 /* ---------- 特效 ---------- */
 

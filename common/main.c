@@ -16,10 +16,10 @@
 #define ENGINE_INTERVAL_MS 100
 
 #define DIV_MOV  10
-#define ROLL_DIV 20
+#define ROLL_DIV 10
 
-//2个相机(两个视图窗口)
-static _3D_Camera *camera1, *camera2;
+//3个相机(三视图)
+static _3D_Camera *camera1, *camera2, *camera3;
 //3个模型
 static _3D_Model *model0, *model1, *model2;
 //3个远动控制器(往引擎添加模型后返回的运动控制指针)
@@ -57,16 +57,19 @@ int main(int argc, char **argv)
         delayms(INTERVAL_MS);
 
         //清空相机照片
-        _3d_camera_photo_clear(camera1, 0x000000);
-        _3d_camera_photo_clear(camera2, 0x000000);
+        _3d_camera_photo_clear(camera1, 0x440000);
+        _3d_camera_photo_clear(camera2, 0x004400);
+        _3d_camera_photo_clear(camera3, 0x000044);
 
         //相机抓拍
         _3d_engine_photo(engine, camera1);
         _3d_engine_photo(engine, camera2);
+        _3d_engine_photo(engine, camera3);
 
         //把照片显示到屏幕(由于这里要打开 /dev/fb0 设备,所以需要 sudo 运行)
         fb_output(camera1->photoMap, 0, 0, camera1->width, camera1->height);
-        fb_output(camera2->photoMap, camera2->width, 0, camera2->width, camera2->height);
+        fb_output(camera2->photoMap, camera1->width, 0, camera2->width, camera2->height);
+        fb_output(camera3->photoMap, 0, camera1->height, camera3->width, camera3->height);
 
         //读取终端输入
         memset(input, 0, sizeof(input));
@@ -74,6 +77,7 @@ int main(int argc, char **argv)
         {
             memset(mov_xyz, 0, sizeof(double) * 3);
             memset(roll_xyz, 0, sizeof(double) * 3);
+
             //平移
             if (input[0] == '1')
                 mov_xyz[0] = DIV_MOV;
@@ -83,19 +87,39 @@ int main(int argc, char **argv)
                 mov_xyz[2] = DIV_MOV;
             else if (input[0] == 'w')
                 mov_xyz[2] = -DIV_MOV;
-            else if (input[0] == 'q')
-                mov_xyz[1] = DIV_MOV;
             else if (input[0] == 'e')
+                mov_xyz[1] = DIV_MOV;
+            else if (input[0] == 'q')
                 mov_xyz[1] = -DIV_MOV;
+            
+            //旋转
+            if (input[0] == 's')
+                roll_xyz[1] = ROLL_DIV;
+            else if (input[0] == 'x')
+                roll_xyz[1] = -ROLL_DIV;
+            else if (input[0] == 'z')
+                roll_xyz[2] = ROLL_DIV;
+            else if (input[0] == 'c')
+                roll_xyz[2] = -ROLL_DIV;
+            else if (input[0] == 'a')
+                roll_xyz[0] = ROLL_DIV;
+            else if (input[0] == 'd')
+                roll_xyz[0] = -ROLL_DIV;
 
             else if (input[0] == 'R')
             {
                 _3d_camera_reset(camera1);
                 _3d_camera_reset(camera2);
+                _3d_camera_reset(camera3);
             }
 
-            _3d_camera_mov(camera1, mov_xyz);
-            _3d_camera_mov(camera2, mov_xyz);
+            _3d_camera_mov(camera1, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
+            _3d_camera_mov(camera2, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
+            _3d_camera_mov(camera3, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
+
+            _3d_camera_roll(camera1, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
+            _3d_camera_roll(camera2, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
+            _3d_camera_roll(camera3, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
         }
     }
 
@@ -105,19 +129,22 @@ int main(int argc, char **argv)
 void engine_init(void)
 {
     //相机初始位置和转角
-    double camera1_xyz[3] = {-100, 50, 10};
+    double camera1_xyz[3] = {-120, 0, 0};
+    double camera2_xyz[3] = {0, 120, 0};
+    double camera3_xyz[3] = {0, 0, 120};
     double camera1_roll_xyz[3] = {0, 0, 0};
-    double camera2_xyz[3] = {-100, -50, 10};
-    double camera2_roll_xyz[3] = {0, 0, 0};
+    double camera2_roll_xyz[3] = {0, 0, 90};
+    double camera3_roll_xyz[3] = {0, -90, 0};
     //模型初始位置和转角
-    double model1_xyz[3] = {0, 50, 0};
+    double model1_xyz[3] = {-15, -30, 0};
+    double model2_xyz[3] = {15, 30, 0};
     double model1_roll_xyz[3] = {0, 0, 0};
-    double model2_xyz[3] = {0, -50, 0};
     double model2_roll_xyz[3] = {0, 0, 0};
 
-    //相机1,2初始化: 300x300窗口,开角90度,近远范围(5,1000)
+    //相机初始化: 300x300窗口,开角90度,近远范围(5,1000)
     camera1 = _3d_camera_init(300, 300, 90, 5, 1000, camera1_xyz, camera1_roll_xyz);
     camera2 = _3d_camera_init(300, 300, 90, 5, 1000, camera2_xyz, camera2_roll_xyz);
+    camera3 = _3d_camera_init(300, 300, 90, 5, 1000, camera3_xyz, camera3_roll_xyz);
 
     model0 = _3d_model_init(6,
         100.0, 0.0, 0.0, 0x800000,
@@ -161,23 +188,23 @@ void engine_init(void)
 
     //模型2初始化: 三棱柱 (注意!! 变长参数中的double类型一定要0.0格式)
     model2 = _3d_model_init(6,
-        20.0, 0.0, 30, 0xFFFFFF,
-        -10.0, 17.3, 30, 0xFFFFFF,
-        -10.0, -17.3, 30, 0xFFFFFF,
-        -10.0, -17.3, -30, 0xFFFFFF,
-        20.0, 0.0, -30, 0xFFFFFF,
-        -10.0, 17.3, -30, 0xFFFFFF);
+        20.0, 0.0, 20.0, 0xFF0000,
+        -10.0, 17.3, 20.0, 0x00FF00,
+        -10.0, -17.3, 20.0, 0x0000FF,
+        -10.0, -17.3, -20.0, 0xFFFF00,
+        20.0, 0.0, -20.0, 0x00FFFF,
+        -10.0, 17.3, -20.0, 0xFF00FF);
     _3d_model_net_add(model2, 0xFFFFFF, 0, 3, 1, 2, 4); //连线关系
     _3d_model_net_add(model2, 0xFFFFFF, 1, 2, 2, 5);
     _3d_model_net_add(model2, 0xFFFFFF, 2, 1, 3);
     _3d_model_net_add(model2, 0xFFFFFF, 3, 2, 4, 5);
     _3d_model_net_add(model2, 0xFFFFFF, 4, 1, 5);
-    _3d_model_label_add(model2, 0xFFFFFF, 20.0, 0.0, 30, "A"); //注释
-    _3d_model_label_add(model2, 0xFFFFFF, -10.0, 17.3, 30, "B");
-    _3d_model_label_add(model2, 0xFFFFFF, -10.0, -17.3, 30, "C");
-    _3d_model_label_add(model2, 0xFFFFFF, -10.0, -17.3, -30, "D");
-    _3d_model_label_add(model2, 0xFFFFFF, 20.0, 0.0, -30, "E");
-    _3d_model_label_add(model2, 0xFFFFFF, -10.0, 17.3, -30, "F");
+    _3d_model_label_add(model2, 0xFF0000, 20.0, 0.0, 20.0, "A"); //注释
+    _3d_model_label_add(model2, 0x00FF00, -10.0, 17.3, 20.0, "B");
+    _3d_model_label_add(model2, 0x0000FF, -10.0, -17.3, 20.0, "C");
+    _3d_model_label_add(model2, 0xFFFF00, -10.0, -17.3, -20.0, "D");
+    _3d_model_label_add(model2, 0x00FFFF, 20.0, 0.0, -20.0, "E");
+    _3d_model_label_add(model2, 0xFF00FF, -10.0, 17.3, -20.0, "F");
 
     //引擎初始化: 建立1000x1000x1000空间
     engine = _3d_engine_init(ENGINE_INTERVAL_MS, 1000, 1000, 1000);

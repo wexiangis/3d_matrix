@@ -110,11 +110,11 @@ void _3d_camera_release(_3D_Camera **camera)
 /* ---------- 运动 ---------- */
 
 // 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
-void _3d_camera_roll(_3D_Camera *camera, double *roll_xyz)
+void _3d_camera_roll(_3D_Camera *camera, double x, double y, double z)
 {
-    camera->roll_xyz[0] += roll_xyz[0];
-    camera->roll_xyz[1] += roll_xyz[1];
-    camera->roll_xyz[2] += roll_xyz[2];
+    camera->roll_xyz[0] += x;
+    camera->roll_xyz[1] += y;
+    camera->roll_xyz[2] += z;
     //范围限制
     if (camera->roll_xyz[0] > 360.00)
         camera->roll_xyz[0] -= 360.00;
@@ -133,15 +133,15 @@ void _3d_camera_roll(_3D_Camera *camera, double *roll_xyz)
 }
 
 // 相机3轴平移, 增量式, 基于空间坐标系
-void _3d_camera_mov(_3D_Camera *camera, double *mov_xyz)
+void _3d_camera_mov(_3D_Camera *camera, double x, double y, double z)
 {
-    camera->xyz[0] += mov_xyz[0];
-    camera->xyz[1] += mov_xyz[1];
-    camera->xyz[2] += mov_xyz[2];
+    camera->xyz[0] += x;
+    camera->xyz[1] += y;
+    camera->xyz[2] += z;
 }
 
 // 相机3轴平移, 增量式, 基于自身坐标系
-void _3d_camera_mov2(_3D_Camera *camera, double *mov_xyz)
+void _3d_camera_mov2(_3D_Camera *camera, double x, double y, double z)
 {
     ;
 }
