@@ -6,17 +6,20 @@
 #include <sys/ioctl.h>
 
 #include "3d_engine.h"
-#include "2d_draw.h"
 #include "delayus.h"
 #include "fbmap.h"
+#include "bmp.h"
+
+//使能输出帧图片
+#define OUTPUT_FRAME_FOLDER "./frameOutput"
 
 //main函数刷新间隔
-#define INTERVAL_MS 100
+#define INTERVAL_MS 200
 //引擎计算间隔
-#define ENGINE_INTERVAL_MS 100
-
-#define DIV_MOV  10
-#define ROLL_DIV 10
+#define ENGINE_INTERVAL_MS 200
+//平移和旋转最小分度格
+#define DIV_MOV  10 //单位:点
+#define ROLL_DIV 10 //单位:度
 
 //3个相机(三视图)
 static _3D_Camera *camera1, *camera2, *camera3;
@@ -32,12 +35,16 @@ void engine_init(void);
 
 int main(int argc, char **argv)
 {
+#ifdef OUTPUT_FRAME_FOLDER
+    //3个相机输出的帧序号起始
+    int order1 = 1000, order2 = 2000, order3 = 3000;
+#endif
+
     //终端输入
     char input[16];
     int fd;
     float mov_xyz[3];
     float roll_xyz[3];
-
     //打开终端
     if (argc > 1)
         fd = open(argv[1], O_RDONLY);
@@ -52,16 +59,15 @@ int main(int argc, char **argv)
     //引擎启动
     _3d_engine_start (engine);
 
-    //给模型1 x轴 的初始速度,单位:点/秒
+    //给模型1 x轴 的初速度,单位:点/秒
     // sport1->speed[0] = 50;
-    //给模型2 z轴 的初始速度,单位:点/秒
+    //给模型2 z轴 的初速度,单位:点/秒
     // sport2->speed[2] = 50;
 
-    //给模型1 x轴 的旋转初始速度,单位:度/秒
+    //给模型1 x轴 的旋转初速度,单位:度/秒
     sport1->speed_angle[0] = 90;
-    //给模型2 z轴 的旋转初始速度,单位:度/秒
+    //给模型2 z轴 的旋转初速度,单位:度/秒
     sport2->speed_angle[2] = 90;
-
 
     while (1)
     {
@@ -81,6 +87,13 @@ int main(int argc, char **argv)
         fb_output(camera1->photoMap, 0, 0, camera1->width, camera1->height);
         fb_output(camera2->photoMap, camera1->width, 0, camera2->width, camera2->height);
         fb_output(camera3->photoMap, 0, camera1->height, camera3->width, camera3->height);
+
+#ifdef OUTPUT_FRAME_FOLDER
+        //输出帧图片
+        bmp_create2(order1++, OUTPUT_FRAME_FOLDER, camera1->photoMap, camera1->width, camera1->height, 3);
+        bmp_create2(order2++, OUTPUT_FRAME_FOLDER, camera2->photoMap, camera2->width, camera2->height, 3);
+        bmp_create2(order3++, OUTPUT_FRAME_FOLDER, camera3->photoMap, camera3->width, camera3->height, 3);
+#endif
 
         //读取终端输入
         memset(input, 0, sizeof(input));
@@ -218,7 +231,7 @@ void engine_init(void)
     _3d_model_label_add(model2, 0x00FFFF, 20.0, 0.0, -20.0, "E");
     _3d_model_label_add(model2, 0xFF00FF, -10.0, 17.3, -20.0, "F");
 
-    //引擎初始化: 建立 300 x 300 x 300 空间
+    //引擎初始化: 建立 250 x 250 x 250 空间
     engine = _3d_engine_init(ENGINE_INTERVAL_MS, 250, 250, 250);
 
     //往引擎添加模型,得到模型的运动控制器

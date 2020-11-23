@@ -6,7 +6,7 @@ CC = gcc
 DIR_COMMON = common
 DIR_3D = 3d
 DIR_UI = ui
-# obj目录用于缓存.o文件
+# obj目录用于缓存编译生成的.o文件
 DIR_OBJ = obj
 
 # ----- 文件夹编译及.o文件转储 -----

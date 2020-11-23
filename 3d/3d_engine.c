@@ -334,18 +334,6 @@ static void _3d_engine_project_in_camera(
     *retInside = inside;
 }
 
-static void _printf(float *buff, int step, int len)
-{
-    int i, j;
-    for (i = 0; i < len; i++)
-    {
-        for (j = 0; j < step; j++)
-            printf("%.2lf ", buff[i * step + j]);
-        printf("// ");
-    }
-    printf("\r\n");
-}
-
 // 相机抓拍,照片缓存在 camera->photoMap
 void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 {

@@ -205,13 +205,16 @@ unsigned char *bmp_get(char *filePath, int *picMaxSize, int *width, int *height,
     return pic;
 }
 
-//功能: 创建bmp格式图片
-//参数: filePath: 传入, 文件地址
-//         data: 传入, 图片矩阵数据的指针
-//         width: 传入, 图片横向的像素个数
-//         height: 传入, 图片纵向的像素个数
-//         per: 传入, 图片每像素占用字节数
-//返回: 创建的bmp图片文件的大小, -1表示创建失败
+/*
+ *  创建图片,返回文件大小
+ *  参数:
+ *      filePath: 传入, 文件地址
+ *      data: 传入, 图片矩阵数据的指针,rgb格式
+ *      width: 传入, 图片横向的像素个数
+ *      height: 传入, 图片纵向的像素个数
+ *      per: 传入, 图片每像素占用字节数
+ *  返回: 创建的bmp图片文件的大小, -1表示创建失败
+ */
 int bmp_create(char *filePath, unsigned char *data, int width, int height, int per)
 {
     int fp = 0;
@@ -347,4 +350,29 @@ int bmp_create(char *filePath, unsigned char *data, int width, int height, int p
     free(bmpData);
     //sync();
     return fileSize;
+}
+
+/*
+ *  连续输出帧图片
+ *  参数:
+ *      order: 帧序号,用来生成图片名称效果如: 0001.bmp
+ *      folder: 帧图片保存路径,格式如: /tmp
+ *      data: 传入, 图片矩阵数据的指针,rgb格式
+ *      width: 传入, 图片横向的像素个数
+ *      height: 传入, 图片纵向的像素个数
+ *      per: 传入, 图片每像素占用字节数
+ */
+void bmp_create2(int order, char *folder, unsigned char *data, int width, int height, int per)
+{
+    char file[1024] = {0};
+    //参数检查
+    if (!folder || !data || strlen(folder) < 1 || width < 1 || height < 1 || per < 3)
+        return;
+    //路径名称要不要补'/'
+    if (folder[strlen(folder) - 1] == '/')
+        snprintf(file, sizeof(file), "%s%04d.bmp", folder, order);
+    else
+        snprintf(file, sizeof(file), "%s/%04d.bmp", folder, order);
+    //生成文件
+    bmp_create(file, data, width, height, per);
 }
