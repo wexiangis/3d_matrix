@@ -1,5 +1,10 @@
 /*
  *  三维模型的定义
+ * 
+ *  address: https://github.com/wexiangis/3d_matrix
+ *  address2: https://gitee.com/wexiangis/matrix_3d
+ * 
+ *  update: 2020.11.24 - wexiangis - 初版
  */
 #include <stdio.h>
 #include <stdlib.h>

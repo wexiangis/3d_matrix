@@ -1,5 +1,10 @@
 /*
  *  摄像机定义, 主要是定义可视范围、摄像机位置及旋转角度
+ * 
+ *  address: https://github.com/wexiangis/3d_matrix
+ *  address2: https://gitee.com/wexiangis/matrix_3d
+ * 
+ *  update: 2020.11.24 - wexiangis - 初版
  */
 #include <stdio.h>
 #include <stdlib.h>

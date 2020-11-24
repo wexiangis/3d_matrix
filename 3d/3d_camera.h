@@ -1,5 +1,10 @@
 /*
  *  相机定义, 主要是定义可视范围、相机位置及旋转角度
+ * 
+ *  address: https://github.com/wexiangis/3d_matrix
+ *  address2: https://gitee.com/wexiangis/matrix_3d
+ * 
+ *  update: 2020.11.24 - wexiangis - 初版
  */
 #ifndef _3D_CAMERA_H_
 #define _3D_CAMERA_H_

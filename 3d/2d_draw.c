@@ -1,5 +1,10 @@
 /*
  *  2d作图的工具,用于3d引擎输出2d画面
+ * 
+ *  address: https://github.com/wexiangis/3d_matrix
+ *  address2: https://gitee.com/wexiangis/matrix_3d
+ * 
+ *  update: 2020.11.24 - wexiangis - 初版
  */
 #include <stdio.h>
 #include "2d_draw.h"
