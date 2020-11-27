@@ -21,7 +21,7 @@
 void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
- *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
+ *  透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
  * 
  *  参数:
  *      openAngle: 相机开角(单位:度,范围:[1,359])

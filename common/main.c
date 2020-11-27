@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     engine_init();
 
     //引擎启动
-    _3d_engine_start (engine);
+    _3d_engine_start(engine);
 
     //给模型1 x轴 的初速度,单位:点/秒
     // sport1->speed[0] = 50;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
         _3d_camera_photo_clear(camera2, 0x002200);
         _3d_camera_photo_clear(camera3, 0x000022);
 
-        //相机抓拍
+        //相机抓拍,照片放在了 camera->photoMap
         _3d_engine_photo(engine, camera1);
         _3d_engine_photo(engine, camera2);
         _3d_engine_photo(engine, camera3);
@@ -171,6 +171,7 @@ void engine_init(void)
     camera2 = _3d_camera_init(300, 300, 90, 5, 1000, camera2_xyz, camera2_roll_xyz);
     camera3 = _3d_camera_init(300, 300, 90, 5, 1000, camera3_xyz, camera3_roll_xyz);
 
+    //模型0初始化: 空间xyz坐标轴
     model0 = _3d_model_init(6,
         100.0, 0.0, 0.0, 0x800000,
         -100.0, 0.0, 0.0, 0x800000,

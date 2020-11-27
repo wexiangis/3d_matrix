@@ -30,7 +30,7 @@ typedef struct _3DCamera
     float roll_xyz[3]; //相机绕自身坐标系转角(单位:度)
     float lock_xyz[3]; //锁定目标点(就是让相机的旋转以此为原点)
 
-    uint32_t photoSize; //照片内存大小width*height*3
+    uint32_t photoSize; //照片内存大小 width*height*3
     uint8_t *photoMap;  //照片缓冲区,RGB存储格式,大小 width*height*3
 
     struct _3DCamera *backup; //对初始化时的参数进行备份(注意其中的 photoMap 不要重复释放)

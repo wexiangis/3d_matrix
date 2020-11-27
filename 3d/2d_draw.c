@@ -39,7 +39,8 @@ void _2d_draw_line(
     int32_t xerr = 0, yerr = 0;
     int32_t delta_x, delta_y;
     int32_t distance;
-    int32_t incx, incy, xCount, yCount, count;
+    int32_t incx, incy; //增量方向: 0/水平或垂直 1/增 -1/减
+    int32_t xCount, yCount, count;
     uint32_t offset;
     uint32_t timeout = 0;
 
