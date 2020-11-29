@@ -6,8 +6,8 @@
  * 
  *  update: 2020.11.24 - wexiangis - 初版
  */
-#ifndef _3D_MATRIX_H_
-#define _3D_MATRIX_H_
+#ifndef _3D_MATH_H_
+#define _3D_MATH_H_
 
 #include <stdbool.h>
 
@@ -18,7 +18,7 @@
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
@@ -34,7 +34,7 @@ void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3])
  * 
  *  返回: 0/不再相框内  1/在相框内
  */
-bool _3d_matrix_project_calculate(
+bool _3d_math_projection(
     float openAngle,
     float xyz[3],
     float ar,

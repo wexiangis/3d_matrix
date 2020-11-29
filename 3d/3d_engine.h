@@ -14,7 +14,7 @@
 // 基于相机、模型和算法
 #include "3d_camera.h"
 #include "3d_model.h"
-#include "3d_matrix.h"
+#include "3d_math.h"
 
 // 单元的运动控制状态
 typedef struct _3DSport

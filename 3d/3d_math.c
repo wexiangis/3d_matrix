@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#define _3D_MATRIX_PI 3.1415926535897
+#define _3D_MATH_PI 3.1415926535897
 
 /*
  *  旋转矩阵,绕xyz顺序旋转
@@ -19,7 +19,7 @@
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3])
+void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float x, y, z;
     float Xrad, Yrad, Zrad;
@@ -31,9 +31,9 @@ void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3])
     y = xyz[1];
     z = xyz[2];
     //度转rad
-    Xrad = roll_xyz[0] * _3D_MATRIX_PI / 180;
-    Yrad = roll_xyz[1] * _3D_MATRIX_PI / 180;
-    Zrad = roll_xyz[2] * _3D_MATRIX_PI / 180;
+    Xrad = roll_xyz[0] * _3D_MATH_PI / 180;
+    Yrad = roll_xyz[1] * _3D_MATH_PI / 180;
+    Zrad = roll_xyz[2] * _3D_MATH_PI / 180;
 
     /*      [scroll X]
     *   1       0       0
@@ -89,7 +89,7 @@ void _3d_matrix_roll_calculate(float roll_xyz[3], float xyz[3], float retXyz[3])
  * 
  *  返回: false/不再相框内  true/在相框内
  */
-bool _3d_matrix_project_calculate(
+bool _3d_math_projection(
     float openAngle,
     float xyz[3],
     float ar,
@@ -112,7 +112,7 @@ bool _3d_matrix_project_calculate(
         return false;
 
     //度转rad
-    openAngle = openAngle * _3D_MATRIX_PI / 180;
+    openAngle = openAngle * _3D_MATH_PI / 180;
 
     //屏幕高、宽范围(这里是假设屏幕高为2时的数值)
     hMax = 1;
