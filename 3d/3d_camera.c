@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "3d_camera.h"
+#include "3d_math.h"
 
 /*
  *  相机初始化
@@ -114,7 +115,7 @@ void _3d_camera_release(_3D_Camera **camera)
 
 /* ---------- 运动 ---------- */
 
-// 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
+// 相机3轴旋转, 增量式, 绕空间坐标系, 单位:度
 void _3d_camera_roll(_3D_Camera *camera, float x, float y, float z)
 {
     camera->roll_xyz[0] += x;
@@ -137,6 +138,20 @@ void _3d_camera_roll(_3D_Camera *camera, float x, float y, float z)
         camera->roll_xyz[2] += 360.00;
 }
 
+// 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
+void _3d_camera_roll2(_3D_Camera *camera, float rUpDown, float rLeftRight, float rClock)
+{
+    //组成增量向量
+    float rXYZ[3];
+    rXYZ[0] = rClock;
+    rXYZ[1] = rUpDown;
+    rXYZ[2] = rLeftRight;
+    //旋转
+    _3d_math_rollXYZ(camera->roll_xyz, rXYZ, rXYZ);
+    //再旋转
+    _3d_camera_roll(camera, rXYZ[0], rXYZ[1], rXYZ[2]);
+}
+
 // 相机3轴平移, 增量式, 基于空间坐标系
 void _3d_camera_mov(_3D_Camera *camera, float x, float y, float z)
 {
@@ -146,9 +161,17 @@ void _3d_camera_mov(_3D_Camera *camera, float x, float y, float z)
 }
 
 // 相机3轴平移, 增量式, 基于自身坐标系
-void _3d_camera_mov2(_3D_Camera *camera, float x, float y, float z)
+void _3d_camera_mov2(_3D_Camera *camera, float upDown, float leftRight, float frontBack)
 {
-    ;
+    //组成增量向量
+    float mXYZ[3];
+    mXYZ[0] = frontBack;
+    mXYZ[1] = leftRight;
+    mXYZ[2] = upDown;
+    //旋转
+    _3d_math_rollZYX(camera->roll_xyz, mXYZ, mXYZ);
+    //再平移
+    _3d_camera_mov(camera, mXYZ[0], mXYZ[1], mXYZ[2]);
 }
 
 /* ---------- 特效 ---------- */

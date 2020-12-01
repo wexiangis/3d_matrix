@@ -12,13 +12,22 @@
 #include <stdbool.h>
 
 /*
- *  旋转矩阵,绕xyz顺序旋转
+ *  旋转矩阵,绕xyz顺序旋转(和下面的不只是调换顺序,还互为逆矩阵)
  *  参数:
  *      roll_xyz: 绕三轴旋转,单位:度
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
 void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3]);
+
+/*
+ *  旋转矩阵,绕zyx顺序旋转(和上面的不只是调换顺序,还互为逆矩阵)
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:度
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
+ */
+void _3d_math_rollZYX(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]

@@ -9,17 +9,18 @@
 #include "delayus.h"
 #include "fbmap.h"
 #include "bmp.h"
+#include "key.h"
 
 //使能输出帧图片
 #define OUTPUT_FRAME_FOLDER "./frameOutput"
 
 //main函数刷新间隔
-#define INTERVAL_MS 200
+#define INTERVAL_MS 50
 //引擎计算间隔
-#define ENGINE_INTERVAL_MS 200
+#define ENGINE_INTERVAL_MS 50
 //平移和旋转最小分度格
-#define DIV_MOV  10 //单位:点
-#define ROLL_DIV 10 //单位:度
+#define DIV_MOV  1 //单位:点
+#define ROLL_DIV 1 //单位:度
 
 //3个相机(三视图)
 static _3D_Camera *camera1, *camera2, *camera3;
@@ -33,25 +34,82 @@ static _3D_Engine *engine;
 //把大陀的初始化代码放到main函数后面,方便快速查看
 void engine_init(void);
 
+//按键事件回调函数, 控制相机位置和角度
+void key_callback(void *obj, int key, int type)
+{
+    // printf("key/%d type/%d\r\n", key, type);
+
+    float mUpDown = 0, mLeftRight = 0, mFrontBack = 0;
+    float rUpDown = 0, rLeftRight = 0, rClock = 0;
+
+    //'r'键复位
+    if (key == 19 && type == 0)
+    {
+        _3d_camera_reset(camera1);
+        _3d_camera_reset(camera2);
+        _3d_camera_reset(camera3);
+    }
+    else if (type == 1 || type == 2)
+    {
+        //'w'键, 前移
+        if (key == 17)
+            mFrontBack = DIV_MOV;
+        //'s'键， 后移
+        else if (key == 31)
+            mFrontBack = -DIV_MOV;
+        //'a'键, 左移
+        else if (key == 30)
+            mLeftRight = -DIV_MOV;
+        //'d'键, 右移
+        else if (key == 32)
+            mLeftRight = DIV_MOV;
+        //'q'键, 上移
+        else if (key == 16)
+            mUpDown = DIV_MOV;
+        //'e'键， 下移
+        else if (key == 18)
+            mUpDown = -DIV_MOV;
+        
+        //'下'键, 上翻
+        else if (key == 108)
+            rUpDown = ROLL_DIV;
+        //'上'键, 下翻
+        else if (key == 103)
+            rUpDown = -ROLL_DIV;
+        //'左'键, 左翻
+        else if (key == 105)
+            rLeftRight = ROLL_DIV;
+        //'右'键, 右翻
+        else if (key == 106)
+            rLeftRight = -ROLL_DIV;
+        //'左Shift'键, 旋转
+        else if (key == 42)
+            rClock = ROLL_DIV;
+        //'空格'键, 旋转
+        else if (key == 57)
+            rClock = -ROLL_DIV;
+
+        //没有触发键位
+        else
+            return;
+
+        //旋转和平移相机
+        _3d_camera_roll(camera1, rUpDown, rLeftRight, rClock);
+        _3d_camera_roll(camera2, rUpDown, rLeftRight, rClock);
+        _3d_camera_roll(camera3, rUpDown, rLeftRight, rClock);
+
+        _3d_camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack);
+        _3d_camera_mov2(camera2, mUpDown, mLeftRight, mFrontBack);
+        _3d_camera_mov2(camera3, mUpDown, mLeftRight, mFrontBack);
+    }
+}
+
 int main(int argc, char **argv)
 {
 #ifdef OUTPUT_FRAME_FOLDER
     //3个相机输出的帧序号起始
     int order1 = 1000, order2 = 2000, order3 = 3000;
 #endif
-
-    //终端输入
-    char input[16];
-    int fd;
-    float mov_xyz[3];
-    float roll_xyz[3];
-    //打开终端
-    if (argc > 1)
-        fd = open(argv[1], O_RDONLY);
-    else
-        fd = open("/dev/console", O_RDONLY);
-    //非阻塞设置
-    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 
     //初始化引擎
     engine_init();
@@ -68,6 +126,9 @@ int main(int argc, char **argv)
     sport1->speed_angle[0] = 90;
     //给模型2 z轴 的旋转初速度,单位:度/秒
     sport2->speed_angle[2] = 90;
+
+    //注册按键回调
+    key_register(NULL, &key_callback);
 
     while (1)
     {
@@ -94,58 +155,6 @@ int main(int argc, char **argv)
         bmp_create2(order2++, OUTPUT_FRAME_FOLDER, camera2->photoMap, camera2->width, camera2->height, 3);
         bmp_create2(order3++, OUTPUT_FRAME_FOLDER, camera3->photoMap, camera3->width, camera3->height, 3);
 #endif
-
-        //读取终端输入
-        memset(input, 0, sizeof(input));
-        if (read(fd, input, sizeof(input)) > 0)
-        // if (scanf("%s", input) > 0)
-        {
-            memset(mov_xyz, 0, sizeof(float) * 3);
-            memset(roll_xyz, 0, sizeof(float) * 3);
-
-            //平移
-            if (input[0] == '1')
-                mov_xyz[0] = DIV_MOV;
-            else if (input[0] == '3')
-                mov_xyz[0] = -DIV_MOV;
-            else if (input[0] == '2')
-                mov_xyz[2] = DIV_MOV;
-            else if (input[0] == 'w')
-                mov_xyz[2] = -DIV_MOV;
-            else if (input[0] == 'e')
-                mov_xyz[1] = DIV_MOV;
-            else if (input[0] == 'q')
-                mov_xyz[1] = -DIV_MOV;
-            
-            //旋转
-            if (input[0] == 's')
-                roll_xyz[1] = ROLL_DIV;
-            else if (input[0] == 'x')
-                roll_xyz[1] = -ROLL_DIV;
-            else if (input[0] == 'z')
-                roll_xyz[2] = ROLL_DIV;
-            else if (input[0] == 'c')
-                roll_xyz[2] = -ROLL_DIV;
-            else if (input[0] == 'a')
-                roll_xyz[0] = ROLL_DIV;
-            else if (input[0] == 'd')
-                roll_xyz[0] = -ROLL_DIV;
-
-            else if (input[0] == 'R')
-            {
-                _3d_camera_reset(camera1);
-                _3d_camera_reset(camera2);
-                _3d_camera_reset(camera3);
-            }
-
-            _3d_camera_mov(camera1, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
-            _3d_camera_mov(camera2, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
-            _3d_camera_mov(camera3, mov_xyz[0], mov_xyz[1], mov_xyz[2]);
-
-            _3d_camera_roll(camera1, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
-            _3d_camera_roll(camera2, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
-            _3d_camera_roll(camera3, roll_xyz[0], roll_xyz[1], roll_xyz[2]);
-        }
     }
 
     return 0;

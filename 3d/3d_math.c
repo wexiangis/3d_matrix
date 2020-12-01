@@ -13,7 +13,7 @@
 #define _3D_MATH_PI 3.1415926535897
 
 /*
- *  旋转矩阵,绕xyz顺序旋转
+ *  旋转矩阵,绕xyz顺序旋转(和下面的不只是调换顺序,还互为逆矩阵)
  *  参数:
  *      roll_xyz: 绕三轴旋转,单位:度
  *      xyz: 目标点
@@ -22,7 +22,7 @@
 void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float x, y, z;
-    float Xrad, Yrad, Zrad;
+    float A, B, C;
     //参数检查
     if (roll_xyz == NULL || xyz == NULL || retXyz == NULL)
         return;
@@ -31,48 +31,127 @@ void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3])
     y = xyz[1];
     z = xyz[2];
     //度转rad
-    Xrad = roll_xyz[0] * _3D_MATH_PI / 180;
-    Yrad = roll_xyz[1] * _3D_MATH_PI / 180;
-    Zrad = roll_xyz[2] * _3D_MATH_PI / 180;
+    A = roll_xyz[0] * _3D_MATH_PI / 180;
+    B = roll_xyz[1] * _3D_MATH_PI / 180;
+    C = roll_xyz[2] * _3D_MATH_PI / 180;
 
-    /*      [scroll X]
+    /*
+    *       [roll X]
     *   1       0       0
     *   0     cosA    -sinA
     *   0     sinA     cosA
     *
-    *       [scroll Y]
+    *       [roll Y]
     *  cosB     0      sinB
     *   0       1       0
     * -sinB     0      cosB
     *
-    *       [scroll Z]
+    *       [roll Z]
     *  cosC   -sinC     0
     *  sinC    cosC     0
     *   0       0       1
     *
-    *                                          |x|
-    *   result = [scroll X][scroll Y][scroll Z]|y|
-    *                                          |z|
+    *                                   |x|
+    *  result = [roll X][roll Y][roll Z]|y|
+    *                                   |z|
     *
-    *            |retXyz[0]|
-    *          = |retXyz[1]|
-    *            |retXyz[2]|
+    *           |cB,     0,  sB    |        |x|
+    *         = |sB*sA,  cA, -cB*sA|[roll Z]|y|
+    *           |-sB*cA, sA, cB*cA |        |z|
+    * 
+    *           |cC*cB,             -sC*cB,            sB    ||x|
+    *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
+    *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
     *
-    *   retXyz[*] just like the following ...
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
     */
-
     retXyz[0] =
-        x * cos(Yrad) * cos(Zrad) -
-        y * cos(Yrad) * sin(Zrad) +
-        z * sin(Yrad);
+        x * cos(C) * cos(B) +
+        y * (-sin(C) * cos(B)) +
+        z * sin(B);
     retXyz[1] =
-        x * (sin(Xrad) * sin(Yrad) * cos(Zrad) + cos(Xrad) * sin(Zrad)) -
-        y * (sin(Xrad) * sin(Yrad) * sin(Zrad) - cos(Xrad) * cos(Zrad)) -
-        z * sin(Xrad) * cos(Yrad);
+        x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
+        y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
+        z * (-cos(B) * sin(A));
     retXyz[2] =
-        -x * (cos(Xrad) * sin(Yrad) * cos(Zrad) - sin(Xrad) * sin(Zrad)) +
-        y * (cos(Xrad) * sin(Yrad) * sin(Zrad) + sin(Xrad) * cos(Zrad)) +
-        z * cos(Xrad) * cos(Yrad);
+        x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
+        y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
+        z * cos(B) * cos(A);
+}
+
+/*
+ *  旋转矩阵,绕zyx顺序旋转(和上面的不只是调换顺序,还互为逆矩阵)
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:度
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
+ */
+void _3d_math_rollZYX(float roll_xyz[3], float xyz[3], float retXyz[3])
+{
+    float x, y, z;
+    float A, B, C;
+    //参数检查
+    if (roll_xyz == NULL || xyz == NULL || retXyz == NULL)
+        return;
+    //
+    x = xyz[0];
+    y = xyz[1];
+    z = xyz[2];
+    //度转rad
+    A = roll_xyz[0] * _3D_MATH_PI / 180;
+    B = roll_xyz[1] * _3D_MATH_PI / 180;
+    C = roll_xyz[2] * _3D_MATH_PI / 180;
+
+    /*
+    *       [roll Z]
+    *  cosC    sinC     0
+    * -sinC    cosC     0
+    *   0       0       1
+    *
+    *       [roll Y]
+    *  cosB     0     -sinB
+    *   0       1       0
+    *  sinB     0      cosB
+    * 
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA     sinA
+    *   0    -sinA     cosA
+    *
+    *                                   |x|
+    *  result = [roll Z][roll Y][roll X]|y|
+    *                                   |z|
+    *
+    *           |cB*cC,  sC, -sB*cC|        |x|
+    *         = |-cB*sC, cC, sB*sC |[roll X]|y|
+    *           |sB,     0,  cB    |        |z|
+    * 
+    *           |cB*cC,  cA*sC + sA*sB*cC, sA*sC - cA*sB*cC||x|
+    *         = |-cB*sC, cA*cC - sA*sB*sC, sA*cC + cA*sB*sC||x|
+    *           |sB,     -sA*cB,           cA*cB           ||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+    retXyz[0] =
+        x * cos(B) * cos(C) +
+        y * (cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
+        z * (sin(A) * sin(C) - cos(A) * sin(B) * cos(C));
+    retXyz[1] =
+        x * (-cos(B) * sin(C)) +
+        y * (cos(A) * cos(C) - sin(A) * sin(B) * sin(C)) +
+        z * (sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
+    retXyz[2] =
+        x * sin(B) +
+        y * (-sin(A) * cos(B)) +
+        z * cos(A) * cos(B);
 }
 
 /*
