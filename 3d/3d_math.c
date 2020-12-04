@@ -8,18 +8,259 @@
  */
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #define _3D_MATH_PI 3.1415926535897
 
+// 四元数转欧拉角
+// static void _quat_to_pry(float q[4], float pry[3])
+// {
+//     pry[0] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
+//     pry[1] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
+//     pry[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
+// }
+
+// 四元数乘法
+static void _quat_multiply(float q1[4], float q2[4], float ret[4])
+{
+    float _ret[4];
+    _ret[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
+    _ret[1] = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2];
+    _ret[2] = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1];
+    _ret[3] = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0];
+    ret[0] = _ret[0];
+    ret[1] = _ret[1];
+    ret[2] = _ret[2];
+    ret[3] = _ret[3];
+}
+
 /*
- *  旋转矩阵,绕xyz顺序旋转(和下面的不只是调换顺序,还互为逆矩阵)
+ *  四元数方式旋转和逆旋转
+ *  参数:
+ *      quat[4]: 使用已有的四元数(可置NULL), 将不使用 roll_vector 和 roll_deg
+ *      roll_vector[3]: 要绕转的空间向量,右手旋转,大拇指向量方向
+ *      roll_deg: 旋转角度,单位:度
+ *      vector[3]: 被旋转的向量,输出结果覆写到此
+ *      T: 转置
+ */
+void quat_roll(float quat[4], float roll_vector[3], float roll_deg, float vector[3], bool T)
+{
+    float *q = quat;
+    float _q[4], qT[4];
+    float v[4], ret[4];
+    float rad = roll_deg * _3D_MATH_PI / 180;
+    // float norm;
+
+    if (!q)
+    {
+        q = _q;
+        q[0] = cos(rad / 2);
+        q[1] = sin(rad / 2) * roll_vector[0];
+        q[2] = sin(rad / 2) * roll_vector[1];
+        q[3] = sin(rad / 2) * roll_vector[2];
+    }
+
+    qT[0] = q[0];
+    qT[1] = -q[1];
+    qT[2] = -q[2];
+    qT[3] = -q[3];
+
+    v[0] = 0;
+    v[1] = vector[0];
+    v[2] = vector[1];
+    v[3] = vector[2];
+
+    if (T)
+    {
+        _quat_multiply(qT, v, ret);
+        _quat_multiply(ret, q, ret);
+    }
+    else
+    {
+        _quat_multiply(q, v, ret);
+        _quat_multiply(ret, qT, ret);
+    }
+
+    // norm = sqrt(ret[1] * ret[1] + ret[2] * ret[2] + ret[3] * ret[3]);
+    // if (!isnan(norm))
+    // {
+    //     ret[1] /= norm;
+    //     ret[2] /= norm;
+    //     ret[3] /= norm;
+
+    //     norm = sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+    //     if (!isnan(norm))
+    //     {
+    //         ret[1] *= norm;
+    //         ret[2] *= norm;
+    //         ret[3] *= norm;
+    //     }
+    // }
+
+    memcpy(vector, &ret[1], sizeof(float) * 3);
+}
+
+static void _quat_roll_xyz(float roll_xyz[3], float vector[3], bool zyx)
+{
+    float qx[4] = {0}, qy[4] = {0}, qz[4] = {0};
+    float qxT[4] = {0}, qyT[4] = {0}, qzT[4] = {0};
+    float v[4], ret[4];
+
+    qx[0] = qxT[0] = cos(roll_xyz[0] / 2 * _3D_MATH_PI / 180);
+    qx[1] = sin(roll_xyz[0] / 2 * _3D_MATH_PI / 180);
+    qxT[1] = -qx[1];
+
+    qy[0] = qyT[0] = cos(roll_xyz[1] / 2 * _3D_MATH_PI / 180);
+    qy[2] = sin(roll_xyz[1] / 2 * _3D_MATH_PI / 180);
+    qyT[2] = -qy[2];
+
+    qz[0] = qzT[0] = cos(roll_xyz[2] / 2 * _3D_MATH_PI / 180);
+    qz[3] = sin(roll_xyz[2] / 2 * _3D_MATH_PI / 180);
+    qzT[3] = -qz[3];
+
+    v[0] = 0;
+    v[1] = vector[0];
+    v[2] = vector[1];
+    v[3] = vector[2];
+
+    if (zyx)
+    {
+        _quat_multiply(qz, qy, ret);
+        _quat_multiply(ret, qx, ret);
+        _quat_multiply(ret, v, ret);
+        _quat_multiply(ret, qxT, ret);
+        _quat_multiply(ret, qyT, ret);
+        _quat_multiply(ret, qzT, ret);
+
+        // _quat_multiply(qxT, qyT, ret);
+        // _quat_multiply(ret, qzT, ret);
+        // _quat_multiply(ret, v, ret);
+        // _quat_multiply(ret, qz, ret);
+        // _quat_multiply(ret, qy, ret);
+        // _quat_multiply(ret, qx, ret);
+    }
+    else
+    {
+        _quat_multiply(qx, qy, ret);
+        _quat_multiply(ret, qz, ret);
+        _quat_multiply(ret, v, ret);
+        _quat_multiply(ret, qzT, ret);
+        _quat_multiply(ret, qyT, ret);
+        _quat_multiply(ret, qxT, ret);
+    }
+
+    memcpy(vector, &ret[1], sizeof(float) * 3);
+}
+
+/*
+ *  四元数依次三轴旋转
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:度
+ *      xyz: 目标点,旋转结果覆写到此
+ */
+void quat_xyz(float roll_xyz[3], float xyz[3])
+{
+    _quat_roll_xyz(roll_xyz, xyz, false);
+}
+void quat_zyx(float roll_xyz[3], float xyz[3])
+{
+    _quat_roll_xyz(roll_xyz, xyz, true);
+}
+
+/*
+ *  使用现有四元数进行旋转矩阵运算
+ */
+void quat_matrix_xyz(float quat[4], float xyz[3])
+{
+    float q0 = quat[0];
+    float q1 = quat[1];
+    float q2 = quat[2];
+    float q3 = quat[3];
+    float ret[3];
+    // float norm;
+
+    ret[0] =
+        xyz[0] * (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) +
+        xyz[1] * 2 * (q1 * q2 - q0 * q3) +
+        xyz[2] * 2 * (q1 * q3 + q0 * q2);
+    ret[1] =
+        xyz[0] * 2 * (q1 * q2 + q0 * q3) +
+        xyz[1] * (q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3) +
+        xyz[2] * 2 * (q2 * q3 + q0 * q1);
+    ret[2] =
+        xyz[0] * 2 * (q1 * q3 - q0 * q2) +
+        xyz[1] * 2 * (q1 * q2 + q0 * q3) +
+        xyz[2] * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+    
+    // norm = sqrt(ret[0] * ret[0] + ret[1] * ret[1] + ret[2] * ret[2]);
+    // if (!isnan(norm))
+    // {
+    //     ret[0] /= norm;
+    //     ret[1] /= norm;
+    //     ret[2] /= norm;
+
+    //     norm = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    //     if (!isnan(norm))
+    //     {
+    //         ret[0] *= norm;
+    //         ret[1] *= norm;
+    //         ret[2] *= norm;
+    //     }
+    // }
+
+    memcpy(xyz, ret, sizeof(float) * 3);
+}
+void quat_matrix_zyx(float quat[4], float xyz[3])
+{
+    float q0 = quat[0];
+    float q1 = quat[1];
+    float q2 = quat[2];
+    float q3 = quat[3];
+    float ret[3];
+    // float norm;
+
+    ret[0] =
+        xyz[0] * (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) +
+        xyz[1] * 2 * (q1 * q2 + q0 * q3) +
+        xyz[2] * 2 * (q1 * q3 - q0 * q2);
+    ret[1] =
+        xyz[0] * 2 * (q1 * q2 - q0 * q3) +
+        xyz[1] * (q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3) +
+        xyz[2] * 2 * (q2 * q3 + q0 * q1);
+    ret[2] =
+        xyz[0] * 2 * (q1 * q3 + q0 * q2) +
+        xyz[1] * 2 * (q2 * q3 + q0 * q1) +
+        xyz[2] * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+    
+    // norm = sqrt(ret[0] * ret[0] + ret[1] * ret[1] + ret[2] * ret[2]);
+    // if (!isnan(norm))
+    // {
+    //     ret[0] /= norm;
+    //     ret[1] /= norm;
+    //     ret[2] /= norm;
+
+    //     norm = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    //     if (!isnan(norm))
+    //     {
+    //         ret[0] *= norm;
+    //         ret[1] *= norm;
+    //         ret[2] *= norm;
+    //     }
+    // }
+
+    memcpy(xyz, ret, sizeof(float) * 3);
+}
+
+/*
+ *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)
  *  参数:
  *      roll_xyz: 绕三轴旋转,单位:度
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3])
+void matrix_xyz(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float x, y, z;
     float A, B, C;
@@ -82,15 +323,7 @@ void _3d_math_rollXYZ(float roll_xyz[3], float xyz[3], float retXyz[3])
         y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
         z * cos(B) * cos(A);
 }
-
-/*
- *  旋转矩阵,绕zyx顺序旋转(和上面的不只是调换顺序,还互为逆矩阵)
- *  参数:
- *      roll_xyz: 绕三轴旋转,单位:度
- *      xyz: 目标点
- *      retXyz: 旋转和平移后结果写到此
- */
-void _3d_math_rollZYX(float roll_xyz[3], float xyz[3], float retXyz[3])
+void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float x, y, z;
     float A, B, C;
@@ -168,7 +401,7 @@ void _3d_math_rollZYX(float roll_xyz[3], float xyz[3], float retXyz[3])
  * 
  *  返回: false/不再相框内  true/在相框内
  */
-bool _3d_math_projection(
+bool projection(
     float openAngle,
     float xyz[3],
     float ar,

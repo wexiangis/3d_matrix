@@ -147,7 +147,7 @@ void _3d_camera_roll2(_3D_Camera *camera, float rUpDown, float rLeftRight, float
     rXYZ[1] = rUpDown;
     rXYZ[2] = rLeftRight;
     //旋转
-    _3d_math_rollXYZ(camera->roll_xyz, rXYZ, rXYZ);
+    matrix_xyz(camera->roll_xyz, rXYZ, rXYZ);
     //再旋转
     _3d_camera_roll(camera, rXYZ[0], rXYZ[1], rXYZ[2]);
 }
@@ -169,7 +169,7 @@ void _3d_camera_mov2(_3D_Camera *camera, float upDown, float leftRight, float fr
     mXYZ[1] = leftRight;
     mXYZ[2] = upDown;
     //旋转
-    _3d_math_rollZYX(camera->roll_xyz, mXYZ, mXYZ);
+    matrix_zyx(camera->roll_xyz, mXYZ, mXYZ);
     //再平移
     _3d_camera_mov(camera, mXYZ[0], mXYZ[1], mXYZ[2]);
 }

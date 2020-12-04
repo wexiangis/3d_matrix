@@ -216,7 +216,7 @@ static void _3d_engine_model_location(
     for (xyzCount = 0; xyzCount < unit->model->pCount * 3;)
     {
         //先旋转
-        _3d_math_rollXYZ(
+        matrix_xyz(
             unit->sport->roll_xyz,
             &unit->model->xyz[xyzCount],
             &xyz[xyzCount]);
@@ -238,7 +238,7 @@ static void _3d_engine_model_location(
         for (xyzCount = 0; xyzCount < unit->model->labelCount * 3 && label;)
         {
             //先旋转
-            _3d_math_rollXYZ(
+            matrix_xyz(
                 unit->sport->roll_xyz,
                 label->xyz,
                 &xyzLabel[xyzCount]);
@@ -286,7 +286,7 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32
         roll_xyz[0] = camera->roll_xyz[0];
         roll_xyz[1] = camera->roll_xyz[1];
         roll_xyz[2] = camera->roll_xyz[2];
-        _3d_math_rollXYZ(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
+        matrix_xyz(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
     }
 }
 
@@ -318,7 +318,7 @@ static void _3d_engine_project_in_camera(
     for (c1 = c2 = c3 = 0; c1 < xyzTotal; c1 += 1, c2 += 2, c3 += 3)
     {
         //根据相机参数进行透视投影
-        inside[c1] = _3d_math_projection(
+        inside[c1] = projection(
             camera->openAngle,
             &xyz[c3],
             camera->ar,
