@@ -37,7 +37,7 @@ long engine_getTickUs(void)
     _tick1 = engine_getTickUs();
 
 //根据sport运动状态,更新位置和旋转角度(朝向)
-static void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
+static void engine_sport(_3D_Engine *engine, _3D_Sport *sport)
 {
     uint32_t count;
     //平移
@@ -63,7 +63,7 @@ static void _3d_engine_sport(_3D_Engine *engine, _3D_Sport *sport)
 }
 
 // 主线程
-static void _3d_engine_thread(void *argv)
+static void engine_thread(void *argv)
 {
     _3D_Engine *engine = (_3D_Engine *)argv;
     _3D_Unit *unit;
@@ -80,7 +80,7 @@ static void _3d_engine_thread(void *argv)
         while (unit)
         {
             //更新运动状态
-            _3d_engine_sport(engine, unit->sport);
+            engine_sport(engine, unit->sport);
             //下一个
             unit = unit->next;
         }
@@ -94,7 +94,7 @@ static void _3d_engine_thread(void *argv)
  *      intervalMs: 刷新间隔,单位:ms
  *      xSize, ySize, zSize: 空间场地大小,其中点(xSize/2, ySize/2, zSize/2)的位置将作为空间原点
  */
-_3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize)
+_3D_Engine *engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize)
 {
     _3D_Engine *engine;
     //参数检查
@@ -112,7 +112,7 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float
     engine->xyzRange[2][0] = -(zSize / 2);
     engine->xyzRange[2][1] = zSize / 2;
     pthread_mutex_init(&engine->lock, NULL);
-    pthread_create(&engine->th, NULL, (void *)&_3d_engine_thread, engine);
+    pthread_create(&engine->th, NULL, (void *)&engine_thread, engine);
     return engine;
 }
 
@@ -124,7 +124,7 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float
  * 
  *  返回: 模型运动控制器,可用于移除时使用
  */
-_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz)
+_3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz)
 {
     _3D_Unit *unit, *tmpUnit;
     //参数检查
@@ -154,7 +154,7 @@ _3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz
 }
 
 // 模型移除
-void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
+void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
 {
     _3D_Unit *unit, *unitNext;
     if (engine->unit)
@@ -201,7 +201,7 @@ void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
  *      retXyzLabel: 返回运算后模型所有label位置,可能*retXyzLabel=NULL !! 用完记得free !!
  *      retXyzLabelTotal: 返回 retXyzLabel 中坐标点的个数
  */
-static void _3d_engine_model_location(
+static void engine_model_location(
     _3D_Unit *unit,
     float **retXyz, uint32_t *retXyzTotal,
     float **retXyzLabel, uint32_t *retXyzLabelTotal)
@@ -267,7 +267,7 @@ static void _3d_engine_model_location(
  *      xyz: 坐标点数组
  *      xyzTotal: 数组中坐标点的个数
  */
-static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32_t xyzTotal)
+static void engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32_t xyzTotal)
 {
     uint32_t xyzCount;
     //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
@@ -296,7 +296,7 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32
  *      retDepth: 返回每个 retXy 点的深度信息,单位:点 !! 用完记得free !!
  *      retInside: 返回每个 retXy 点是否在屏幕内     !! 用完记得free !!
  */
-static void _3d_engine_project_in_camera(
+static void engine_project_in_camera(
     _3D_Camera *camera,
     float *xyz,
     uint32_t xyzTotal,
@@ -338,7 +338,7 @@ static void _3d_engine_project_in_camera(
 }
 
 // 相机抓拍,照片缓存在 camera->photoMap
-void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
+void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 {
     float *xyz;        //坐标数组
     uint32_t xyzTotal; //坐标点总数
@@ -371,19 +371,19 @@ void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
         inside = insideLabel = NULL;
 
         //获取模型身上每一个点的真实三维坐标
-        _3d_engine_model_location(unit, &xyz, &xyzTotal, &xyzLabel, &xyzLabelTotal);
+        engine_model_location(unit, &xyz, &xyzTotal, &xyzLabel, &xyzLabelTotal);
 
         //坐标点相对于相机的位置变化
         if (xyz && xyzTotal > 0)
-            _3d_engine_location_in_camera(camera, xyz, xyzTotal);
+            engine_location_in_camera(camera, xyz, xyzTotal);
         if (xyzLabel && xyzLabelTotal > 0)
-            _3d_engine_location_in_camera(camera, xyzLabel, xyzLabelTotal);
+            engine_location_in_camera(camera, xyzLabel, xyzLabelTotal);
 
         //透视投影三维坐标点到相机的二维平面,得到二维坐标点信息
         if (xyz && xyzTotal > 0)
-            _3d_engine_project_in_camera(camera, xyz, xyzTotal, &xy, &depth, &inside);
+            engine_project_in_camera(camera, xyz, xyzTotal, &xy, &depth, &inside);
         if (xyzLabel && xyzLabelTotal > 0)
-            _3d_engine_project_in_camera(camera, xyzLabel, xyzLabelTotal, &xyLabel, &depthLabel, &insideLabel);
+            engine_project_in_camera(camera, xyzLabel, xyzLabelTotal, &xyLabel, &depthLabel, &insideLabel);
 
         //画模型连线关系画线
         net = unit->model->net;
@@ -463,19 +463,19 @@ void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 }
 
 // 开始
-void _3d_engine_start(_3D_Engine *engine)
+void engine_start(_3D_Engine *engine)
 {
     engine->run = true;
 }
 
 // 暂停
-void _3d_engine_pause(_3D_Engine *engine)
+void engine_pause(_3D_Engine *engine)
 {
     engine->run = false;
 }
 
 // 内存销毁(注意其中用到的 model 和 camera 需自行销毁)
-void _3d_engine_release(_3D_Engine **engine)
+void engine_release(_3D_Engine **engine)
 {
     _3D_Unit *unit, *unitNext;
     if (engine && (*engine))

@@ -36,6 +36,8 @@ void pry_to_quat2(float pry[3], float q[4]);
 
 // 四元数转欧拉角
 void quat_to_pry(float q[4], float pry[3]);
+// pry使用单位: 度
+void quat_to_pry2(float q[4], float pry[3]);
 
 /*
  *  四元数方式旋转和逆旋转
@@ -65,8 +67,8 @@ void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-// void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]); // 待验证
-// void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
+void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]); // 待验证
+void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
 
 /*
  *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)

@@ -51,7 +51,7 @@ typedef struct _3DModel
  * 
  *  返回: NULL/失败
  */
-_3D_Model *_3d_model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...);
+_3D_Model *model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...);
 
 /*
  *  连线关系,以 pSrc 作为顶点,和多个 pDist 点相连
@@ -62,7 +62,7 @@ _3D_Model *_3d_model_init(uint32_t pCount, float x, float y, float z, uint32_t r
  *      pDist: 第一个要连的点的序号, 按初始化时传入点的顺序, 从0数起
  *      ...: 变长参数,参考 pDist 格式继续凑够 pDistCount 个参数
  */
-void _3d_model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint32_t pDistCount, uint32_t pDist, ...);
+void model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint32_t pDistCount, uint32_t pDist, ...);
 
 /*
  *  添加注释
@@ -71,12 +71,12 @@ void _3d_model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint3
  *      label: 注释内容
  *      x, y, z: 位置
  */
-void _3d_model_label_add(_3D_Model *model, uint32_t rgbColor, float x, float y, float z, char *text);
+void model_label_add(_3D_Model *model, uint32_t rgbColor, float x, float y, float z, char *text);
 
 // 模型拷贝
-_3D_Model *_3d_model_copy(_3D_Model *model);
+_3D_Model *model_copy(_3D_Model *model);
 
 // 内存销毁
-void _3d_model_release(_3D_Model **model);
+void model_release(_3D_Model **model);
 
 #endif

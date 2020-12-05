@@ -53,7 +53,7 @@ typedef struct _3DEngine
  *      intervalMs: 刷新间隔,单位:ms
  *      xSize, ySize, zSize: 空间场地大小,其中点(xSize/2, ySize/2, zSize/2)的位置将作为空间原点
  */
-_3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize);
+_3D_Engine *engine_init(uint32_t intervalMs, float xSize, float ySize, float zSize);
 
 /*
  *  添加模型
@@ -63,21 +63,21 @@ _3D_Engine *_3d_engine_init(uint32_t intervalMs, float xSize, float ySize, float
  * 
  *  返回: 模型运动控制器,可进行异步控制、获取模型的运动状态
  */
-_3D_Sport *_3d_engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz);
+_3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz);
 
 // 模型移除
-void _3d_engine_model_remove(_3D_Engine *engine, _3D_Sport *sport);
+void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport);
 
 // 相机抓拍,照片缓存在 camera->photoMap
-void _3d_engine_photo(_3D_Engine *engine, _3D_Camera *camera);
+void engine_photo(_3D_Engine *engine, _3D_Camera *camera);
 
 // 开始
-void _3d_engine_start(_3D_Engine *engine);
+void engine_start(_3D_Engine *engine);
 
 // 暂停
-void _3d_engine_pause(_3D_Engine *engine);
+void engine_pause(_3D_Engine *engine);
 
 // 内存销毁(注意其中用到的 model 和 camera 需自行销毁)
-void _3d_engine_release(_3D_Engine **engine);
+void engine_release(_3D_Engine **engine);
 
 #endif
