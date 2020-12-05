@@ -216,7 +216,7 @@ static void _3d_engine_model_location(
     for (xyzCount = 0; xyzCount < unit->model->pCount * 3;)
     {
         //先旋转
-        matrix_xyz(
+        matrix_zyx2(
             unit->sport->roll_xyz,
             &unit->model->xyz[xyzCount],
             &xyz[xyzCount]);
@@ -238,7 +238,7 @@ static void _3d_engine_model_location(
         for (xyzCount = 0; xyzCount < unit->model->labelCount * 3 && label;)
         {
             //先旋转
-            matrix_xyz(
+            matrix_zyx2(
                 unit->sport->roll_xyz,
                 label->xyz,
                 &xyzLabel[xyzCount]);
@@ -286,7 +286,7 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32
         roll_xyz[0] = camera->roll_xyz[0];
         roll_xyz[1] = camera->roll_xyz[1];
         roll_xyz[2] = camera->roll_xyz[2];
-        matrix_xyz(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
+        matrix_zyx2(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
     }
 }
 

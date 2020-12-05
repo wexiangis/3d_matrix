@@ -12,40 +12,67 @@
 #include <stdbool.h>
 
 /*
+ *  quaternion解算
+ *  参数:
+ *      valG: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
+ *      valA: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
+ *      pry: 输出绕xyz轴角度,单位:rad (可以置NULL)
+ *      intervalMs: 采样间隔,单位:ms (必要参数)
+ */
+void quat_pry(float *valG, float *valA, float *pry, int intervalMs);
+
+// 四元数乘法
+void quat_multiply(float q1[4], float q2[4], float ret[4]);
+
+// 欧拉角转四元数(zyx顺序)
+void pry_to_quat(float pry[3], float q[4]);
+
+// 四元数转欧拉角
+void quat_to_pry(float q[4], float pry[3]);
+
+/*
  *  四元数方式旋转和逆旋转
  *  参数:
- *      quat[4]: 使用已有的四元数(可置NULL), 将不使用 roll_vector 和 roll_deg
+ *      quat[4]: 使用已有的四元数(可置NULL), 将不使用 roll_vector 和 roll_rad
  *      roll_vector[3]: 要绕转的空间向量,右手旋转,大拇指向量方向
- *      roll_deg: 旋转角度,单位:度
+ *      roll_rad: 旋转角度,单位:rad
  *      vector[3]: 被旋转的向量,输出结果覆写到此
  *      T: 转置
  */
-void quat_roll(float quat[4], float roll_vector[3], float roll_deg, float vector[3], bool T);
+void quat_roll(float quat[4], float roll_vector[3], float roll_rad, float vector[3], bool T);
 
 /*
  *  四元数依次三轴旋转
  *  参数:
- *      roll_xyz: 绕三轴旋转,单位:度
- *      xyz: 目标点,旋转结果覆写到此
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_xyz(float roll_xyz[3], float xyz[3]);
-void quat_zyx(float roll_xyz[3], float xyz[3]);
+void quat_xyz(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  使用现有四元数进行旋转矩阵运算
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_matrix_xyz(float quat[4], float xyz[3]);
-void quat_matrix_zyx(float quat[4], float xyz[3]);
+void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]);
+void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
 
 /*
  *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)
  *  参数:
- *      roll_xyz: 绕三轴旋转,单位:度
+ *      roll_xyz: 绕三轴旋转,单位:rad
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
 void matrix_xyz(float roll_xyz[3], float xyz[3], float retXyz[3]);
 void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
+// roll_xyz[3] 使用度格式
+void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]

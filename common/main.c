@@ -12,7 +12,7 @@
 #include "key.h"
 
 //使能输出帧图片
-#define OUTPUT_FRAME_FOLDER "./frameOutput"
+// #define OUTPUT_FRAME_FOLDER "./frameOutput"
 
 //main函数刷新间隔
 #define INTERVAL_MS 50
@@ -94,9 +94,9 @@ void key_callback(void *obj, int key, int type)
             return;
 
         //旋转和平移相机
-        _3d_camera_roll(camera1, rUpDown, rLeftRight, rClock);
-        _3d_camera_roll(camera2, rUpDown, rLeftRight, rClock);
-        _3d_camera_roll(camera3, rUpDown, rLeftRight, rClock);
+        _3d_camera_roll(camera1, rClock, rUpDown, rLeftRight);
+        _3d_camera_roll(camera2, rClock, rUpDown, rLeftRight);
+        _3d_camera_roll(camera3, rClock, rUpDown, rLeftRight);
 
         _3d_camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack);
         _3d_camera_mov2(camera2, mUpDown, mLeftRight, mFrontBack);
