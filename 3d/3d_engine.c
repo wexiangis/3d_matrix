@@ -269,7 +269,6 @@ static void _3d_engine_model_location(
  */
 static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32_t xyzTotal)
 {
-    float roll_xyz[3];
     uint32_t xyzCount;
     //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
     for (xyzCount = 0; xyzCount < xyzTotal * 3;)
@@ -282,11 +281,10 @@ static void _3d_engine_location_in_camera(_3D_Camera *camera, float *xyz, uint32
     //再把相机自身的旋转转嫁为坐标点相对相机的旋转
     for (xyzCount = 0; xyzCount < xyzTotal * 3; xyzCount += 3)
     {
-        //注意这里要反方向旋转
-        roll_xyz[0] = camera->roll_xyz[0];
-        roll_xyz[1] = camera->roll_xyz[1];
-        roll_xyz[2] = camera->roll_xyz[2];
-        matrix_zyx2(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
+        // quat_to_pry(camera->quat, roll_xyz);
+        // matrix_xyz(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
+
+        quat_roll(camera->quat, NULL, 0, &xyz[xyzCount], true);
     }
 }
 

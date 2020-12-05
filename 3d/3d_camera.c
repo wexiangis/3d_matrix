@@ -42,6 +42,7 @@ _3D_Camera *_3d_camera_init(
     camera->openAngle = openAngle;
     camera->near = near;
     camera->far = far;
+    camera->quat[0] = 1;
     //照片内存
     camera->photoSize = width * height * 3;
     camera->photoMap = (uint8_t *)calloc(camera->photoSize, sizeof(uint8_t));
@@ -49,7 +50,10 @@ _3D_Camera *_3d_camera_init(
     if (xyz)
         memcpy(camera->xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
-        memcpy(camera->roll_xyz, roll_xyz, sizeof(float) * 3);
+    {
+        quat_diff2(camera->quat, roll_xyz);
+        // pry_to_quat2(roll_xyz, camera->quat);
+    }
     //备份
     camera->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera->backup, camera, sizeof(_3D_Camera));
@@ -118,38 +122,15 @@ void _3d_camera_release(_3D_Camera **camera)
 // 相机3轴旋转, 增量式, 绕空间坐标系, 单位:度
 void _3d_camera_roll(_3D_Camera *camera, float x, float y, float z)
 {
-    camera->roll_xyz[0] += x;
-    camera->roll_xyz[1] += y;
-    camera->roll_xyz[2] += z;
-    //范围限制
-    if (camera->roll_xyz[0] > 360.00)
-        camera->roll_xyz[0] -= 360.00;
-    else if (camera->roll_xyz[0] < -360.00)
-        camera->roll_xyz[0] += 360.00;
-
-    if (camera->roll_xyz[1] > 360.00)
-        camera->roll_xyz[1] -= 360.00;
-    else if (camera->roll_xyz[1] < -360.00)
-        camera->roll_xyz[1] += 360.00;
-
-    if (camera->roll_xyz[2] > 360.00)
-        camera->roll_xyz[3] -= 360.00;
-    else if (camera->roll_xyz[2] < -360.00)
-        camera->roll_xyz[2] += 360.00;
+    // 暂时顶着...
+    _3d_camera_roll2(camera, y, z, x);
 }
 
 // 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
 void _3d_camera_roll2(_3D_Camera *camera, float rUpDown, float rLeftRight, float rClock)
 {
-    //组成增量向量
-    float rXYZ[3];
-    rXYZ[0] = rClock;
-    rXYZ[1] = rUpDown;
-    rXYZ[2] = rLeftRight;
-    //旋转
-    matrix_xyz2(camera->roll_xyz, rXYZ, rXYZ);
-    //再旋转
-    _3d_camera_roll(camera, rXYZ[0], rXYZ[1], rXYZ[2]);
+    float roll_xyz[] = {rClock, rUpDown, rLeftRight};
+    quat_diff2(camera->quat, roll_xyz);
 }
 
 // 相机3轴平移, 增量式, 基于空间坐标系
@@ -164,12 +145,9 @@ void _3d_camera_mov(_3D_Camera *camera, float x, float y, float z)
 void _3d_camera_mov2(_3D_Camera *camera, float upDown, float leftRight, float frontBack)
 {
     //组成增量向量
-    float mXYZ[3];
-    mXYZ[0] = frontBack;
-    mXYZ[1] = leftRight;
-    mXYZ[2] = upDown;
-    //旋转
-    matrix_zyx2(camera->roll_xyz, mXYZ, mXYZ);
+    float mXYZ[] = {frontBack, leftRight, upDown};
+    //
+    quat_roll(camera->quat, NULL, 0, mXYZ, false);
     //再平移
     _3d_camera_mov(camera, mXYZ[0], mXYZ[1], mXYZ[2]);
 }

@@ -72,16 +72,16 @@ void key_callback(void *obj, int key, int type)
         
         //'下'键, 上翻
         else if (key == 108)
-            rUpDown = ROLL_DIV;
+            rUpDown = -ROLL_DIV;
         //'上'键, 下翻
         else if (key == 103)
-            rUpDown = -ROLL_DIV;
+            rUpDown = ROLL_DIV;
         //'左'键, 左翻
         else if (key == 105)
-            rLeftRight = ROLL_DIV;
+            rLeftRight = -ROLL_DIV;
         //'右'键, 右翻
         else if (key == 106)
-            rLeftRight = -ROLL_DIV;
+            rLeftRight = ROLL_DIV;
         //'左Shift'键, 旋转
         else if (key == 42)
             rClock = ROLL_DIV;
@@ -94,9 +94,9 @@ void key_callback(void *obj, int key, int type)
             return;
 
         //旋转和平移相机
-        _3d_camera_roll(camera1, rClock, rUpDown, rLeftRight);
-        _3d_camera_roll(camera2, rClock, rUpDown, rLeftRight);
-        _3d_camera_roll(camera3, rClock, rUpDown, rLeftRight);
+        _3d_camera_roll2(camera1, rUpDown, rLeftRight, rClock);
+        _3d_camera_roll2(camera2, rUpDown, rLeftRight, rClock);
+        _3d_camera_roll2(camera3, rUpDown, rLeftRight, rClock);
 
         _3d_camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack);
         _3d_camera_mov2(camera2, mUpDown, mLeftRight, mFrontBack);
@@ -167,8 +167,8 @@ void engine_init(void)
     float camera2_xyz[3] = {0, 120, 0};
     float camera3_xyz[3] = {0, 0, 120};
     float camera1_roll_xyz[3] = {0, 0, 0};
-    float camera2_roll_xyz[3] = {0, 0, 90};
-    float camera3_roll_xyz[3] = {0, -90, 0};
+    float camera2_roll_xyz[3] = {0, 0, -90};
+    float camera3_roll_xyz[3] = {0, 90, 0};
     //模型初始位置和转角
     float model1_xyz[3] = {-15, -30, 0};
     float model2_xyz[3] = {15, 30, 0};

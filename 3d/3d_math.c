@@ -84,7 +84,7 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     q[1] += (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
     q[2] += (q[0] * gy - q[1] * gz + q[3] * gx) * halfT;
     q[3] += (q[0] * gz + q[1] * gy - q[2] * gx) * halfT;
-    // 正常化四元,单位化
+    // 单位化
     norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
     if (isnan(norm))
     {
@@ -98,8 +98,8 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     // pry
     if (pry)
     {
-        pry[0] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
-        pry[1] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
+        pry[1] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
+        pry[0] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
         pry[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
     }
     // stack in
@@ -107,6 +107,36 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     memcpy(eIntBak, eInt, sizeof(float) * 3);
     // printf(" Q %.4f %.4f %.4f %.4f // %.4f %.4f %.4f \r\n",
     //     q[0], q[1], q[2], q[3], eInt[0], eInt[1], eInt[2]);
+}
+
+// 四元数角增量(龙格塔微分方程)
+void quat_diff(float q[4], float roll_xyz[3])
+{
+    float norm;
+    q[0] += (-q[1] * roll_xyz[0] - q[2] * roll_xyz[1] - q[3] * roll_xyz[2]) / 2;
+    q[1] += (q[0] * roll_xyz[0] + q[2] * roll_xyz[2] - q[3] * roll_xyz[1]) / 2;
+    q[2] += (q[0] * roll_xyz[1] - q[1] * roll_xyz[2] + q[3] * roll_xyz[0]) / 2;
+    q[3] += (q[0] * roll_xyz[2] + q[1] * roll_xyz[1] - q[2] * roll_xyz[0]) / 2;
+    // 单位化
+    norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    if (isnan(norm))
+    {
+        // printf(" isnan Q2 \r\n");
+        return;
+    }
+    q[0] = q[0] / norm;
+    q[1] = q[1] / norm;
+    q[2] = q[2] / norm;
+    q[3] = q[3] / norm;
+}
+// roll_xyz使用单位: 度
+void quat_diff2(float q[4], float roll_xyz[3])
+{
+    float _roll_xyz[3];
+    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    quat_diff(q, _roll_xyz);
 }
 
 // 四元数乘法
@@ -129,6 +159,7 @@ void pry_to_quat(float pry[3], float q[4])
     float Qp[4] = {0};
     float Qr[4] = {0};
     float Qy[4] = {0};
+    float norm;
 
     Qp[0] = cos(pry[0] / 2);
     Qp[1] = sin(pry[0] / 2);
@@ -141,13 +172,33 @@ void pry_to_quat(float pry[3], float q[4])
 
     quat_multiply(Qy, Qr, q);
     quat_multiply(q, Qp, q);
+    // 单位化
+    norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    if (isnan(norm))
+    {
+        // printf(" isnan Q2 \r\n");
+        return;
+    }
+    q[0] = q[0] / norm;
+    q[1] = q[1] / norm;
+    q[2] = q[2] / norm;
+    q[3] = q[3] / norm;
+}
+// pry使用单位: 度
+void pry_to_quat2(float pry[3], float q[4])
+{
+    float _pry[3];
+    _pry[0] = pry[0] * MATH_PI / 180;
+    _pry[1] = pry[1] * MATH_PI / 180;
+    _pry[2] = pry[2] * MATH_PI / 180;
+    pry_to_quat(_pry, q);
 }
 
 // 四元数转欧拉角
 void quat_to_pry(float q[4], float pry[3])
 {
-    pry[0] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
-    pry[1] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
+    pry[1] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
+    pry[0] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
     pry[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
 }
 
@@ -552,8 +603,7 @@ void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3])
         z * cos(A) * cos(B);
 #endif
 }
-
-// roll_xyz[3] 使用度格式
+// roll_xyz使用单位: 度
 void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float _roll_xyz[3];

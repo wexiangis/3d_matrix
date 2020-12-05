@@ -27,7 +27,8 @@ typedef struct _3DCamera
     uint32_t far;    //远端距离(远端到相机原点距离）
 
     float xyz[3];      //相机原点当前所在坐标
-    float roll_xyz[3]; //相机绕自身坐标系转角(单位:度)
+    float quat[4];     //用四元数法记录相机转角
+
     float lock_xyz[3]; //锁定目标点(就是让相机的旋转以此为原点)
 
     uint32_t photoSize; //照片内存大小 width*height*3
