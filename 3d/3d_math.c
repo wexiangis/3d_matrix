@@ -1,3 +1,12 @@
+/*
+ *  相关的数学运算
+ * 
+ *  address: https://github.com/wexiangis/3d_matrix
+ *  address2: https://gitee.com/wexiangis/matrix_3d
+ * 
+ *  update: 2020.11.24 - wexiangis - 初版
+ *  update: 2020.12.06 - wexiangis - 添加四元数算法
+ */
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -86,13 +95,15 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     q[3] += (q[0] * gz + q[1] * gy - q[2] * gx) * halfT;
     // 单位化
     norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-    if (!isnan(norm))
+    if (isnan(norm))
     {
-        q[0] /= norm;
-        q[1] /= norm;
-        q[2] /= norm;
-        q[3] /= norm;
+        // printf(" quat_pry: nan \r\n");
+        return;
     }
+    q[0] /= norm;
+    q[1] /= norm;
+    q[2] /= norm;
+    q[3] /= norm;
     // pry
     if (pry)
     {

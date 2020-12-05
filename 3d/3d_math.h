@@ -5,6 +5,7 @@
  *  address2: https://gitee.com/wexiangis/matrix_3d
  * 
  *  update: 2020.11.24 - wexiangis - 初版
+ *  update: 2020.12.06 - wexiangis - 添加四元数算法
  */
 #ifndef _3D_MATH_H_
 #define _3D_MATH_H_
