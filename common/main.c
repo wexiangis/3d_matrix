@@ -94,11 +94,20 @@ void key_callback(void *obj, int key, int type)
             return;
 
         //旋转和平移相机
-        camera_roll2(camera1, rUpDown, rLeftRight, rClock);
+
+        // camera_roll(camera1, rClock, rUpDown, rLeftRight); //空间坐标系
+        // camera_roll(camera2, rClock, rUpDown, rLeftRight);
+        // camera_roll(camera3, rClock, rUpDown, rLeftRight);
+
+        camera_roll2(camera1, rUpDown, rLeftRight, rClock); //自身坐标系
         camera_roll2(camera2, rUpDown, rLeftRight, rClock);
         camera_roll2(camera3, rUpDown, rLeftRight, rClock);
 
-        camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack);
+        // camera_mov(camera1, mFrontBack, mLeftRight, mUpDown); //空间坐标系
+        // camera_mov(camera2, mFrontBack, mLeftRight, mUpDown);
+        // camera_mov(camera3, mFrontBack, mLeftRight, mUpDown);
+
+        camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack); //自身坐标系
         camera_mov2(camera2, mUpDown, mLeftRight, mFrontBack);
         camera_mov2(camera3, mUpDown, mLeftRight, mFrontBack);
     }

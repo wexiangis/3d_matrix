@@ -119,8 +119,11 @@ void camera_release(_3D_Camera **camera)
 // 相机3轴旋转, 增量式, 绕空间坐标系, 单位:度
 void camera_roll(_3D_Camera *camera, float x, float y, float z)
 {
-    // 暂时顶着...
-    camera_roll2(camera, y, z, x);
+    float rxyz[] = {x, y, z};
+    //
+    quat_roll(camera->quat, NULL, 0, rxyz, true);
+    //
+    camera_roll2(camera, rxyz[1], rxyz[2], rxyz[0]);
 }
 
 // 相机3轴旋转, 增量式, 绕自身坐标系, 单位:度
