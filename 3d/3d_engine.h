@@ -21,8 +21,11 @@ typedef struct _3DSport
 {
     float xyz[3];         //质心在空间中的位置
     float roll_xyz[3];    //绕自身坐标系转角(单位:度)
+
     float speed[3];       //速度向量,相对空间坐标系,单位:点/秒
     float speed_angle[3]; //角速度向量,相对自身坐标系,单位:度/秒
+    
+    float quat[4];        //使用四元数微分方程来更新 roll_xyz[]
     // struct _3DSport *next;   //用链表来记录历史状态
 } _3D_Sport;
 

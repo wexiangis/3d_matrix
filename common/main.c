@@ -131,10 +131,11 @@ int main(int argc, char **argv)
     //给模型2 z轴 的初速度,单位:点/秒
     // sport2->speed[2] = 50;
 
-    //给模型1 x轴 的旋转初速度,单位:度/秒
+    //给模型1 x轴,y轴 的旋转初速度,单位:度/秒
     sport1->speed_angle[0] = 90;
+    sport1->speed_angle[1] = 90;
     //给模型2 z轴 的旋转初速度,单位:度/秒
-    sport2->speed_angle[2] = 90;
+    sport2->speed_angle[1] = 90;
 
     //注册按键回调
     key_register(NULL, &key_callback);
@@ -172,9 +173,9 @@ int main(int argc, char **argv)
 void all_init(void)
 {
     //相机初始位置和转角
-    float camera1_xyz[3] = {-120, 0, 0};
-    float camera2_xyz[3] = {0, 120, 0};
-    float camera3_xyz[3] = {0, 0, 120};
+    float camera1_xyz[3] = {-100, 0, 0};
+    float camera2_xyz[3] = {0, 100, 0};
+    float camera3_xyz[3] = {0, 0, 100};
     float camera1_roll_xyz[3] = {0, 0, 0};
     float camera2_roll_xyz[3] = {0, 0, -90};
     float camera3_roll_xyz[3] = {0, 90, 0};
@@ -191,18 +192,18 @@ void all_init(void)
 
     //模型0初始化: 空间xyz坐标轴
     model0 = model_init(6,
-        100.0, 0.0, 0.0, 0x800000,
-        -100.0, 0.0, 0.0, 0x800000,
-        0.0, 100.0, 0.0, 0x008000,
-        0.0, -100.0, 0.0, 0x008000,
-        0.0, 0.0, 100.0, 0x000080,
-        0.0, 0.0, -100.0, 0x000080);
+        50.0, 0.0, 0.0, 0x800000,
+        -50.0, 0.0, 0.0, 0x800000,
+        0.0, 50.0, 0.0, 0x008000,
+        0.0, -50.0, 0.0, 0x008000,
+        0.0, 0.0, 50.0, 0x000080,
+        0.0, 0.0, -50.0, 0x000080);
     model_net_add(model0, 0x800000, 0, 1, 1); //连线关系
     model_net_add(model0, 0x008000, 2, 1, 3);
     model_net_add(model0, 0x000080, 4, 1, 5);
-    model_label_add(model0, 0x800000, 100.0, 0.0, 0.0, "X"); //注释
-    model_label_add(model0, 0x008000, 0.0, 100.0, 0.0, "Y");
-    model_label_add(model0, 0x000080, 0.0, 0.0, 100.0, "Z");
+    model_label_add(model0, 0x800000, 50.0, 0.0, 0.0, "X"); //注释
+    model_label_add(model0, 0x008000, 0.0, 50.0, 0.0, "Y");
+    model_label_add(model0, 0x000080, 0.0, 0.0, 50.0, "Z");
 
     //模型1初始化: 长方体 (注意!! 变长参数中的float类型一定要0.0格式)
     model1 = model_init(8,

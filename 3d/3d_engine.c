@@ -40,6 +40,7 @@ long engine_getTickUs(void)
 static void engine_sport(_3D_Engine *engine, _3D_Sport *sport)
 {
     uint32_t count;
+    float _speed_angle[3];
     //平移
     for (count = 0; count < 3; count++)
     {
@@ -51,15 +52,20 @@ static void engine_sport(_3D_Engine *engine, _3D_Sport *sport)
             sport->xyz[count] += engine->xyzSize[count];
     }
     //旋转
-    for (count = 0; count < 3; count++)
-    {
-        sport->roll_xyz[count] += sport->speed_angle[count] * engine->intervalMs / 1000;
-        //范围限制
-        if (sport->roll_xyz[count] > 360)
-            sport->roll_xyz[count] -= 360;
-        else if (sport->roll_xyz[count] < -360)
-            sport->roll_xyz[count] += 360;
-    }
+    // for (count = 0; count < 3; count++)
+    // {
+    //     sport->roll_xyz[count] += sport->speed_angle[count] * engine->intervalMs / 1000;
+    //     //范围限制
+    //     if (sport->roll_xyz[count] > 360)
+    //         sport->roll_xyz[count] -= 360;
+    //     else if (sport->roll_xyz[count] < -360)
+    //         sport->roll_xyz[count] += 360;
+    // }
+    _speed_angle[0] = sport->speed_angle[0] * engine->intervalMs / 1000;
+    _speed_angle[1] = sport->speed_angle[1] * engine->intervalMs / 1000;
+    _speed_angle[2] = sport->speed_angle[2] * engine->intervalMs / 1000;
+    quat_diff2(sport->quat, _speed_angle);
+    quat_to_pry2(sport->quat, sport->roll_xyz);
 }
 
 // 主线程
@@ -133,11 +139,15 @@ _3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, fl
     //参数初始化
     unit = (_3D_Unit *)calloc(1, sizeof(_3D_Unit));
     unit->sport = (_3D_Sport *)calloc(1, sizeof(_3D_Sport));
+    unit->sport->quat[0] = 1.0f;
     unit->model = model;
     if (xyz)
         memcpy(unit->sport->xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
-        memcpy(unit->sport->roll_xyz, roll_xyz, sizeof(float) * 3);
+    {
+        pry_to_quat2(roll_xyz, unit->sport->quat);
+        quat_to_pry2(unit->sport->quat, unit->sport->roll_xyz);
+    }
     //加入链表
     pthread_mutex_lock(&engine->lock);
     if (engine->unit == NULL)
