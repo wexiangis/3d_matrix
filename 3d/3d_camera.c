@@ -20,6 +20,7 @@
  *      near, far: 可视范围的近端和远端, 要求大于0且far要大于near, 推荐值: near=5 far=1000
  * 
  *  返回: NULL/参数错误
+ *  其它: 当 xyz = NULL, roll_xyz = NULL 相机在空间默认位置为原点,面朝x轴正方向,头顶z轴正方向,左边y轴正方向
  */
 _3D_Camera *camera_init(
     uint32_t width,

@@ -42,8 +42,8 @@ typedef struct _3DEngine
 {
     _3D_Unit *unit;       //单元链表
     uint32_t intervalMs;  //刷新/计算间隔,单位:ms
-    float xyzSize[3];     //xyz空间长度
-    float xyzRange[3][2]; //空间范围 [0]/min [1]/max
+    float xyzSize[3];     //xyz空间范围
+    float xyzRange[3][2]; //空间范围 [x][0]/min [x][1]/max
     pthread_t th;
     pthread_mutex_t lock;
     bool run;        //开/停标志
@@ -61,15 +61,16 @@ _3D_Engine *engine_init(uint32_t intervalMs, float xSize, float ySize, float zSi
 /*
  *  添加模型
  *  参数:
- *      xyz: 在空间中的初始位置
- *      roll_xyz: 绕自身坐标系旋转角度,即朝向
+ *      xyz: 在空间中的初始位置(可以置NULL)
+ *      roll_xyz: 绕自身坐标系旋转角度,即朝向,欧拉角,单位:度(可以置NULL)
  * 
  *  返回: 模型运动控制器,可进行异步控制、获取模型的运动状态
+ *  其它: 当 xyz = NULL, roll_xyz = NULL 模型在空间默认位置为原点,面朝x轴正方向,头顶z轴正方向,左边y轴正方向
  */
 _3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz);
 
-// 模型移除
-void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport);
+// 模型移除,成功返回true (注意 sport 指针成功移除等于被释放,不能再使用)
+bool engine_model_remove(_3D_Engine *engine, _3D_Sport *sport);
 
 // 相机抓拍,照片缓存在 camera->photoMap
 void engine_photo(_3D_Engine *engine, _3D_Camera *camera);

@@ -125,10 +125,11 @@ _3D_Engine *engine_init(uint32_t intervalMs, float xSize, float ySize, float zSi
 /*
  *  添加模型
  *  参数:
- *      xyz: 在空间中的初始位置
- *      roll_xyz: 绕自身坐标系旋转角度,即朝向
+ *      xyz: 在空间中的初始位置(可以置NULL)
+ *      roll_xyz: 绕自身坐标系旋转角度,即朝向,欧拉角,单位:度(可以置NULL)
  * 
- *  返回: 模型运动控制器,可用于移除时使用
+ *  返回: 模型运动控制器,可进行异步控制、获取模型的运动状态
+ *  其它: 当 xyz = NULL, roll_xyz = NULL 模型在空间默认位置为原点,面朝x轴正方向,头顶z轴正方向,左边y轴正方向
  */
 _3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, float *roll_xyz)
 {
@@ -163,8 +164,8 @@ _3D_Sport *engine_model_add(_3D_Engine *engine, _3D_Model *model, float *xyz, fl
     return unit->sport;
 }
 
-// 模型移除
-void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
+// 模型移除,成功返回true (注意 sport 指针成功移除等于被释放,不能再使用)
+bool engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
 {
     _3D_Unit *unit, *unitNext;
     if (engine->unit)
@@ -178,6 +179,7 @@ void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
             free(unit->sport);
             free(unit);
             pthread_mutex_unlock(&engine->lock);
+            return true;
         }
         //不是第一个
         else
@@ -198,9 +200,11 @@ void engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
                 free(unitNext->sport);
                 free(unitNext);
                 pthread_mutex_unlock(&engine->lock);
+                return true;
             }
         }
     }
+    return false;
 }
 
 /*

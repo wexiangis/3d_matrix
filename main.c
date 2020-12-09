@@ -14,19 +14,23 @@
 //使能输出帧图片
 // #define OUTPUT_FRAME_FOLDER "./frameOutput"
 
-//main函数刷新间隔
+//main函数刷新间隔ms
+#ifdef OUTPUT_FRAME_FOLDER
+#define INTERVAL_MS 200 // 保存帧图片建议每秒5张
+#else
 #define INTERVAL_MS 50
-//引擎计算间隔
+#endif
+//引擎计算间隔ms
 #define ENGINE_INTERVAL_MS 50
 //平移和旋转最小分度格
 #define DIV_MOV  1 //单位:点
-#define ROLL_DIV 1 //单位:度
+#define DIV_ROLL 1 //单位:度
 
 //3个相机(三视图)
 static _3D_Camera *camera1, *camera2, *camera3;
 //3个模型
 static _3D_Model *model0, *model1, *model2;
-//3个远动控制器(往引擎添加模型后返回的运动控制指针)
+//3个运动控制器(往引擎添加模型后返回的运动控制指针)
 static _3D_Sport *sport0, *sport1, *sport2;
 //引擎
 static _3D_Engine *engine;
@@ -43,13 +47,13 @@ void key_callback(void *obj, int key, int type)
     float rUpDown = 0, rLeftRight = 0, rClock = 0;
 
     //'r'键复位
-    if (key == 19 && type == 0)
+    if (key == 19 && type == 0) // type = 0, 按键松开
     {
         camera_reset(camera1);
         camera_reset(camera2);
         camera_reset(camera3);
     }
-    else if (type == 1 || type == 2)
+    else if (type == 1 || type == 2) // type = 1,2, 按键按下或一直按住
     {
         //'w'键, 前移
         if (key == 17)
@@ -72,22 +76,22 @@ void key_callback(void *obj, int key, int type)
         
         //'下'键, 上翻
         else if (key == 108)
-            rUpDown = -ROLL_DIV;
+            rUpDown = -DIV_ROLL;
         //'上'键, 下翻
         else if (key == 103)
-            rUpDown = ROLL_DIV;
+            rUpDown = DIV_ROLL;
         //'左'键, 左翻
         else if (key == 105)
-            rLeftRight = -ROLL_DIV;
+            rLeftRight = -DIV_ROLL;
         //'右'键, 右翻
         else if (key == 106)
-            rLeftRight = ROLL_DIV;
+            rLeftRight = DIV_ROLL;
         //'左Shift'键, 旋转
         else if (key == 42)
-            rClock = ROLL_DIV;
+            rClock = DIV_ROLL;
         //'空格'键, 旋转
         else if (key == 57)
-            rClock = -ROLL_DIV;
+            rClock = -DIV_ROLL;
 
         //没有触发键位
         else
@@ -120,7 +124,7 @@ int main(int argc, char **argv)
     int order1 = 1000, order2 = 2000, order3 = 3000;
 #endif
 
-    //初始化引擎
+    //初始化相机、模型、引擎
     all_init();
 
     //引擎启动
@@ -140,6 +144,7 @@ int main(int argc, char **argv)
     //注册按键回调
     key_register(NULL, &key_callback);
 
+    //周期抓拍图像,显示到屏幕或保存图片
     while (1)
     {
         delayms(INTERVAL_MS);
@@ -166,6 +171,22 @@ int main(int argc, char **argv)
         bmp_create2(order3++, OUTPUT_FRAME_FOLDER, camera3->photoMap, camera3->width, camera3->height, 3);
 #endif
     }
+
+    //各模块的释放示例
+
+    // 先释放 engine,由于其占用着model指针
+    // 添加 model 时返回的 sport 指针属于 engine,会同时被释放掉
+    engine_release(&engine);
+
+    // 释放模型
+    model_release(&model0);
+    model_release(&model1);
+    model_release(&model2);
+
+    // 释放相机
+    camera_release(&camera1);
+    camera_release(&camera2);
+    camera_release(&camera3);
 
     return 0;
 }
@@ -251,11 +272,11 @@ void all_init(void)
     model_label_add(model2, 0x00FFFF, 20.0, 0.0, -20.0, "E");
     model_label_add(model2, 0xFF00FF, -10.0, 17.3, -20.0, "F");
 
-    //引擎初始化: 建立 250 x 250 x 250 空间
+    //引擎初始化: 建立 250 x 250 x 250 三维空间
     engine = engine_init(ENGINE_INTERVAL_MS, 250, 250, 250);
 
     //往引擎添加模型,得到模型的运动控制器
-    sport0 = engine_model_add(engine, model0, NULL, NULL); //默认位置空间原点处
+    sport0 = engine_model_add(engine, model0, NULL, NULL); //这是xyz坐标轴,放到空间原点处
     sport1 = engine_model_add(engine, model1, model1_xyz, model1_roll_xyz);
     sport2 = engine_model_add(engine, model2, model2_xyz, model2_roll_xyz);
 }

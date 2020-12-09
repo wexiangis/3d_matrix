@@ -50,6 +50,7 @@ typedef struct _3DCamera
  *      roll_xyz: 初始角度,不用则置NULL
  * 
  *  返回: NULL/参数错误
+ *  其它: 当 xyz = NULL, roll_xyz = NULL 相机在空间默认位置为原点,面朝x轴正方向,头顶z轴正方向,左边y轴正方向
  */
 _3D_Camera *camera_init(
     uint32_t width,
