@@ -1,16 +1,16 @@
 ## 效果演示
 
 * 演示一
-  * 用3个相机作 正视图、右视图、俯视图 效果(markdown显示的时候可能有时间差)
+  * [用3个相机作 正视图、右视图、俯视图](https://gitee.com/wexiangis/matrix_3d "跳转gitee查看演示")
 
-![Image](/效果演示/正视图.gif) ![Image](/效果演示/右视图.gif)
-![Image](/效果演示/俯视图.gif)
+![GIF](/效果演示/正视图.gif) ![GIF](/效果演示/右视图.gif)
+![GIF](/效果演示/俯视图.gif)
 
 * 演示二
-  * 第一人称走动视角
+  * [第一人称走动视角下的三视图](https://gitee.com/wexiangis/matrix_3d "跳转gitee查看演示")
 
-![Image](/效果演示/正视图2.gif) ![Image](/效果演示/右视图2.gif)
-![Image](/效果演示/俯视图2.gif)
+![GIF](/效果演示/正视图2.gif) ![GIF](/效果演示/右视图2.gif)
+![GIF](/效果演示/俯视图2.gif)
 
 ## 编译
 
