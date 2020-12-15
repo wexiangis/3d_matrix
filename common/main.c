@@ -98,22 +98,21 @@ void key_callback(void *obj, int key, int type)
             return;
 
         //旋转和平移相机
-
-        // camera_roll(camera1, rClock, rUpDown, rLeftRight); //空间坐标系
-        // camera_roll(camera2, rClock, rUpDown, rLeftRight);
-        // camera_roll(camera3, rClock, rUpDown, rLeftRight);
-
+#if 0
+        camera_roll(camera1, rClock, rUpDown, rLeftRight); //空间坐标系
+        camera_roll(camera2, rClock, rUpDown, rLeftRight);
+        camera_roll(camera3, rClock, rUpDown, rLeftRight);
+        camera_mov(camera1, -mFrontBack, -mLeftRight, mUpDown); //空间坐标系
+        camera_mov(camera2, -mFrontBack, -mLeftRight, mUpDown);
+        camera_mov(camera3, -mFrontBack, -mLeftRight, mUpDown);
+#else
         camera_roll2(camera1, rUpDown, rLeftRight, rClock); //自身坐标系
         camera_roll2(camera2, rUpDown, rLeftRight, rClock);
         camera_roll2(camera3, rUpDown, rLeftRight, rClock);
-
-        // camera_mov(camera1, mFrontBack, mLeftRight, mUpDown); //空间坐标系
-        // camera_mov(camera2, mFrontBack, mLeftRight, mUpDown);
-        // camera_mov(camera3, mFrontBack, mLeftRight, mUpDown);
-
         camera_mov2(camera1, mUpDown, mLeftRight, mFrontBack); //自身坐标系
         camera_mov2(camera2, mUpDown, mLeftRight, mFrontBack);
         camera_mov2(camera3, mUpDown, mLeftRight, mFrontBack);
+#endif
     }
 }
 
@@ -132,12 +131,14 @@ int main(int argc, char **argv)
 
     //给模型1 x轴 的初速度,单位:点/秒
     // sport1->speed[0] = 50;
+
     //给模型2 z轴 的初速度,单位:点/秒
     // sport2->speed[2] = 50;
 
     //给模型1 x轴,y轴 的旋转初速度,单位:度/秒
     sport1->speed_angle[0] = 90;
-    sport1->speed_angle[1] = 90;
+    // sport1->speed_angle[1] = 90;
+
     //给模型2 z轴 的旋转初速度,单位:度/秒
     sport2->speed_angle[1] = 90;
 
@@ -193,13 +194,18 @@ int main(int argc, char **argv)
 
 void all_init(void)
 {
+    // 相机和模型的默认位置: 
+    //      "身处原点,面朝x轴正方向,头顶z轴正方向,左边y轴正方向"
+    // 空间坐标系：
+    //      使用右手坐标系,拇指x轴正方向,食指y轴正方向,中指z轴正方向
+
     //相机初始位置和转角
-    float camera1_xyz[3] = {-100, 0, 0};
+    float camera1_xyz[3] = {100, 0, 0};
     float camera2_xyz[3] = {0, 100, 0};
     float camera3_xyz[3] = {0, 0, 100};
-    float camera1_roll_xyz[3] = {0, 0, 0};
-    float camera2_roll_xyz[3] = {0, 0, -90};
-    float camera3_roll_xyz[3] = {0, 90, 0};
+    float camera1_roll_xyz[3] = {0, 0, 180};//x轴正方向走动100后来个180度掉头
+    float camera2_roll_xyz[3] = {0, 0, -90};//y轴正方向走动100后
+    float camera3_roll_xyz[3] = {0, 90, 180};
     //模型初始位置和转角
     float model1_xyz[3] = {-15, -30, 0};
     float model2_xyz[3] = {15, 30, 0};
