@@ -10,6 +10,7 @@
 #define _3D_MODEL_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdarg.h>
 
 // 三维空间点的连线关系
@@ -49,9 +50,48 @@ typedef struct _3DModel
  *      x, y, z, rgbColor: 第一个点的坐标和颜色参数
  *      ...: 变长参数,按照第一个点的格式,继续凑够 pCount 个点的参数
  * 
+ *  注意!! 上面x,y,z为float类型的变长参数必须使用0.0格式, 例如: 3要写成3.0
+ * 
  *  返回: NULL/失败
  */
 _3D_Model *model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...);
+
+/*
+ *  模型初始化2,数组导入
+ *  参数:
+ *      pCount: 点个数
+ *      rgbColor: 点颜色
+ *      autoNet: 相邻两点自动连线
+ *      circleNet: 头尾两点连线
+ *      xyzArray: xyz坐标点数组,内存长度为 sizeof(float) * 3 * pCount
+ * 
+ *  返回: NULL/失败
+ */
+_3D_Model *model_init2(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyzArray);
+
+/*
+ *  二维数组导入(model_init2的变种)
+ *  参数:
+ *      xyArray: 二维坐标点数组,内存长度为 sizeof(float) * 2 * pCount
+ *      z: 指定z值
+ *      mode: 指定三轴坐标映射方式(即坐标轴调换)
+ *          0 / xyz --> xyz (默认)
+ *          1 / xyz --> xzy
+ *          2 / xyz --> yxz
+ *          3 / xyz --> yzx
+ *          4 / xyz --> zxy
+ *          5 / xyz --> zyx
+ */
+_3D_Model *model_init3(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyArray, float z, char mode);
+
+/*
+ *  一维数组导入(model_init3的变种)
+ *  参数:
+ *      xArray: 一维坐标点数组,内存长度为 sizeof(float) * pCount
+ *      y: 指定y值
+ *      z: 指定z值
+ */
+_3D_Model *model_init4(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xArray, float y, float z, char mode);
 
 /*
  *  连线关系,以 pSrc 作为顶点,和多个 pDist 点相连
