@@ -47,6 +47,7 @@ _3D_Camera *camera_init(
     //照片内存
     camera->photoSize = width * height * 3;
     camera->photoMap = (uint8_t *)calloc(camera->photoSize, sizeof(uint8_t));
+    camera->photoDepth = (int *)calloc(width * height, sizeof(int));
     //初始状态
     if (xyz)
         memcpy(camera->xyz, xyz, sizeof(float) * 3);
@@ -68,15 +69,16 @@ void camera_reset(_3D_Camera *camera)
 // 清空照片
 void camera_photo_clear(_3D_Camera *camera, uint32_t rgbColor)
 {
-    uint32_t offset;
+    uint32_t mapCount, depthCount;
     uint8_t r = (rgbColor >> 16) & 0xFF;
     uint8_t g = (rgbColor >> 8) & 0xFF;
     uint8_t b = (rgbColor >> 0) & 0xFF;
-    for (offset = 0; offset < camera->photoSize;)
+    for (mapCount = depthCount = 0; mapCount < camera->photoSize;)
     {
-        camera->photoMap[offset++] = r;
-        camera->photoMap[offset++] = g;
-        camera->photoMap[offset++] = b;
+        camera->photoMap[mapCount++] = r;
+        camera->photoMap[mapCount++] = g;
+        camera->photoMap[mapCount++] = b;
+        camera->photoDepth[depthCount++] = 0;
     }
 }
 
@@ -95,6 +97,7 @@ _3D_Camera *camera_copy(_3D_Camera *camera)
     //专有指针重新分配内存
     camera2->photoMap = (uint8_t *)calloc(camera2->photoSize, sizeof(uint8_t));
     memcpy(camera2->photoMap, camera->photoMap, camera2->photoSize);
+    camera2->photoDepth = (int *)calloc(camera2->width * camera2->height, sizeof(int));
     //备份
     camera2->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera2->backup, camera2, sizeof(_3D_Camera));
@@ -108,6 +111,8 @@ void camera_release(_3D_Camera **camera)
     {
         if ((*camera)->photoMap)
             free((*camera)->photoMap);
+        if ((*camera)->photoDepth)
+            free((*camera)->photoDepth);
         if ((*camera)->backup)
             free((*camera)->backup);
         free(*camera);

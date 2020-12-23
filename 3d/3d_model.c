@@ -139,7 +139,7 @@ if (mode == 1) {\
  *          4 / xyz --> zxy
  *          5 / xyz --> zyx
  */
-_3D_Model *model_init3(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyArray, float z, char mode)
+_3D_Model *model_init_map(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyArray, float z, char mode)
 {
     _3D_Model *model;
     uint32_t xyZCount = 0, rgbColorCount = 0, arrayCount = 0;
@@ -170,13 +170,13 @@ _3D_Model *model_init3(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool ci
 }
 
 /*
- *  一维数组导入(model_init3的变种)
+ *  一维数组导入(model_init_map的变种)
  *  参数:
  *      xArray: 一维坐标点数组,内存长度为 sizeof(float) * pCount
  *      y: 指定y值
  *      z: 指定z值
  */
-_3D_Model *model_init4(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xArray, float y, float z, char mode)
+_3D_Model *model_init_line(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xArray, float y, float z, char mode)
 {
     _3D_Model *model;
     uint32_t xyZCount = 0, rgbColorCount = 0, arrayCount = 0;

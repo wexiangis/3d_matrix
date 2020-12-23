@@ -31,8 +31,10 @@ typedef struct _3DCamera
 
     float lock_xyz[3]; //锁定目标点(就是让相机的旋转以此为原点)
 
-    uint32_t photoSize; //照片内存大小 width*height*3
-    uint8_t *photoMap;  //照片缓冲区,RGB存储格式,大小 width*height*3
+    uint32_t photoSize; //照片字节长度 width*height*3
+    uint8_t *photoMap;  //照片缓冲区,RGB存储格式,字节长度 width*height*3
+
+    int *photoDepth; //照片(二维点阵)中的每个点的深度信息,当绘制点处于遮挡状态时可以直接不绘制,字节长度 width*height*sizeof(int)
 
     struct _3DCamera *backup; //对初始化时的参数进行备份(注意其中的 photoMap 不要重复释放)
 

@@ -1,9 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 
 #include "3d_engine.h"
 #include "delayus.h"
