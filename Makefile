@@ -33,4 +33,4 @@ out: $(obj)
 	@$(CC) -Wall -o out $(obj) $(INC) -lm -lpthread
 
 clean:
-	@rm ./obj/* out
+	@rm ./obj/* out -rf

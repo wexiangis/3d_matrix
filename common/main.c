@@ -6,6 +6,8 @@
 #include "bmp.h"
 #include "key.h"
 
+#if 1
+
 //使能输出帧图片
 // #define OUTPUT_FRAME_FOLDER "./frameOutput"
 
@@ -281,3 +283,38 @@ void all_init(void)
     sport1 = engine_model_add(engine, model1, model1_xyz, model1_roll_xyz);
     sport2 = engine_model_add(engine, model2, model2_xyz, model2_roll_xyz);
 }
+
+#else
+
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+
+#include "2d_draw.h"
+#define S_SIZE 500
+
+int main(void)
+{
+    uint8_t map[S_SIZE * S_SIZE * 3] = {0};
+
+    srand(getTickUs());
+
+    while(1)
+    {
+        memset(map, 0, sizeof(map));
+
+        _2d_triangle(
+            map, S_SIZE, S_SIZE,
+            rand() % S_SIZE, rand() % S_SIZE,
+            rand() % S_SIZE, rand() % S_SIZE,
+            rand() % S_SIZE, rand() % S_SIZE);
+
+        fb_output(map, 0, 0, S_SIZE, S_SIZE);
+
+        usleep(200000);
+    }
+
+    return 0;
+}
+
+#endif
