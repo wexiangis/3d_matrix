@@ -14,307 +14,138 @@
 #define _3D_MODEL_PI 3.1415926535897
 
 /*
- *  模型初始化,点设置
+ *  模型初始化,添加三角平面
  *  参数:
- *      pCount: 点个数
- *      x, y, z, rgbColor: 第一个点的坐标和颜色参数, 其中x,y,z必须写成0.00的格式, 如3写成3.00
- *      ...: 变长参数,按照第一个点的格式,继续凑够 pCount 个点的参数
+ *      model: 传入为NULL时自动创建内存
+ *      rgbColor: 平面颜色
+ *      xyz: 三个点的位置
  * 
- *  返回: NULL/失败
+ *  返回: 更新后的模型指针
  */
-_3D_Model *model_init(uint32_t pCount, float x, float y, float z, uint32_t rgbColor, ...)
+_3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float xyz[3][3])
 {
-    _3D_Model *model;
-    va_list ap;
-    uint32_t xyZCount = 0, rgbColorCount = 0;
-    //参数检查
-    if (pCount < 1)
-        return NULL;
-    //基本参数和内存准备
-    model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
-    model->pCount = pCount;
-    model->xyz = (float *)calloc(pCount * 3, sizeof(float));
-    model->rgbColor = (uint32_t *)calloc(pCount, sizeof(uint32_t));
-    //记录第一个点
-    model->xyz[xyZCount++] = x;
-    model->xyz[xyZCount++] = y;
-    model->xyz[xyZCount++] = z;
-    model->rgbColor[rgbColorCount++] = rgbColor;
-    //记录其它点
-    if (rgbColorCount < pCount)
-    {
-        va_start(ap, rgbColor);
-        while (rgbColorCount < pCount)
-        {
-            model->xyz[xyZCount++] = va_arg(ap, double);
-            model->xyz[xyZCount++] = va_arg(ap, double);
-            model->xyz[xyZCount++] = va_arg(ap, double);
-            model->rgbColor[rgbColorCount++] = va_arg(ap, uint32_t);
-        }
-        va_end(ap);
-    }
-    return model;
-}
+    _3D_Plane *plane;
+    uint32_t i;
 
-/*
- *  模型初始化2,数组导入
- *  参数:
- *      pCount: 点个数
- *      rgbColor: 点颜色
- *      autoNet: 相邻两点自动连线
- *      circleNet: 头尾两点连线
- *      xyzArray: xyz坐标点数组,内存长度为 sizeof(float) * 3 * pCount
- * 
- *  返回: NULL/失败
- */
-_3D_Model *model_init2(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyzArray)
-{
-    _3D_Model *model;
-    uint32_t xyZCount = 0, rgbColorCount = 0, arrayCount = 0;
-    //参数检查
-    if (pCount < 1)
-        return NULL;
-    //基本参数和内存准备
-    model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
-    model->pCount = pCount;
-    model->xyz = (float *)calloc(pCount * 3, sizeof(float));
-    model->rgbColor = (uint32_t *)calloc(pCount, sizeof(uint32_t));
-    //添加点
-    while (rgbColorCount < pCount)
-    {
-        model->xyz[xyZCount++] = xyzArray[arrayCount++];
-        model->xyz[xyZCount++] = xyzArray[arrayCount++];
-        model->xyz[xyZCount++] = xyzArray[arrayCount++];
-        model->rgbColor[rgbColorCount++] = rgbColor;
-    }
-    //相邻两点自动连线
-    if (autoNet && pCount > 1)
-    {
-        for (xyZCount = 1; xyZCount < pCount; xyZCount++)
-            model_net_add(model, rgbColor, xyZCount - 1, 1, xyZCount);
-    }
-    //头尾两点连线
-    if (circleNet && pCount > 1)
-        model_net_add(model, rgbColor, 0, 1, pCount - 1);
-    return model;
-}
-
-#define _model_xyz_mode(x, y, z, mode) \
-if (mode == 1) {\
-    model->xyz[xyZCount++] = x;\
-    model->xyz[xyZCount++] = z;\
-    model->xyz[xyZCount++] = y;\
-} else if (mode == 2) {\
-    model->xyz[xyZCount++] = y;\
-    model->xyz[xyZCount++] = x;\
-    model->xyz[xyZCount++] = z;\
-} else if (mode == 3) {\
-    model->xyz[xyZCount++] = y;\
-    model->xyz[xyZCount++] = z;\
-    model->xyz[xyZCount++] = x;\
-} else if (mode == 4) {\
-    model->xyz[xyZCount++] = z;\
-    model->xyz[xyZCount++] = x;\
-    model->xyz[xyZCount++] = y;\
-} else if (mode == 3) {\
-    model->xyz[xyZCount++] = y;\
-    model->xyz[xyZCount++] = z;\
-    model->xyz[xyZCount++] = x;\
-} else {\
-    model->xyz[xyZCount++] = x;\
-    model->xyz[xyZCount++] = y;\
-    model->xyz[xyZCount++] = z;\
-}
-
-/*
- *  二维数组导入(model_init2的变种)
- *  参数:
- *      xyArray: 二维坐标点数组,内存长度为 sizeof(float) * 2 * pCount
- *      z: 指定z值
- *      mode: 指定三轴坐标映射方式(即坐标轴调换)
- *          0 / xyz --> xyz (默认)
- *          1 / xyz --> xzy
- *          2 / xyz --> yxz
- *          3 / xyz --> yzx
- *          4 / xyz --> zxy
- *          5 / xyz --> zyx
- */
-_3D_Model *model_init_map(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xyArray, float z, char mode)
-{
-    _3D_Model *model;
-    uint32_t xyZCount = 0, rgbColorCount = 0, arrayCount = 0;
-    //参数检查
-    if (pCount < 1)
-        return NULL;
-    //基本参数和内存准备
-    model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
-    model->pCount = pCount;
-    model->xyz = (float *)calloc(pCount * 3, sizeof(float));
-    model->rgbColor = (uint32_t *)calloc(pCount, sizeof(uint32_t));
-    //添加点
-    while (rgbColorCount < pCount)
-    {
-        _model_xyz_mode(xyArray[arrayCount++], xyArray[arrayCount++], z, mode);
-        model->rgbColor[rgbColorCount++] = rgbColor;
-    }
-    //相邻两点自动连线
-    if (autoNet && pCount > 1)
-    {
-        for (xyZCount = 1; xyZCount < pCount; xyZCount++)
-            model_net_add(model, rgbColor, xyZCount - 1, 1, xyZCount);
-    }
-    //头尾两点连线
-    if (circleNet && pCount > 1)
-        model_net_add(model, rgbColor, 0, 1, pCount - 1);
-    return model;
-}
-
-/*
- *  一维数组导入(model_init_map的变种)
- *  参数:
- *      xArray: 一维坐标点数组,内存长度为 sizeof(float) * pCount
- *      y: 指定y值
- *      z: 指定z值
- */
-_3D_Model *model_init_line(uint32_t pCount, uint32_t rgbColor, bool autoNet, bool circleNet, float *xArray, float y, float z, char mode)
-{
-    _3D_Model *model;
-    uint32_t xyZCount = 0, rgbColorCount = 0, arrayCount = 0;
-    //参数检查
-    if (pCount < 1)
-        return NULL;
-    //基本参数和内存准备
-    model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
-    model->pCount = pCount;
-    model->xyz = (float *)calloc(pCount * 3, sizeof(float));
-    model->rgbColor = (uint32_t *)calloc(pCount, sizeof(uint32_t));
-    //添加点
-    while (rgbColorCount < pCount)
-    {
-        _model_xyz_mode(xArray[arrayCount++], y, z, mode);
-        model->rgbColor[rgbColorCount++] = rgbColor;
-    }
-    //相邻两点自动连线
-    if (autoNet && pCount > 1)
-    {
-        for (xyZCount = 1; xyZCount < pCount; xyZCount++)
-            model_net_add(model, rgbColor, xyZCount - 1, 1, xyZCount);
-    }
-    //头尾两点连线
-    if (circleNet && pCount > 1)
-        model_net_add(model, rgbColor, 0, 1, pCount - 1);
-    return model;
-}
-
-/*
- *  连线关系,以 pSrc 作为顶点,和多个 pDist 点相连
- *  参数:
- *      rgbColor: 连线颜色
- *      pSrc: 选定点序号, 按初始化时传入点的顺序, 从0数起
- *      pDistCount: 要连接到的点的个数
- *      pDist: 第一个要连的点的序号, 按初始化时传入点的顺序, 从0数起
- *      ...: 变长参数,参考 pDist 格式继续凑够 pDistCount 个参数
- */
-void model_net_add(_3D_Model *model, uint32_t rgbColor, uint32_t pSrc, uint32_t pDistCount, uint32_t pDist, ...)
-{
-    _3D_Net *net, *tmpNet;
-    va_list ap;
-    uint32_t count = 0;
-    //参数检查
-    if (pDistCount < 1)
-        return;
-    //基本参数和内存准备
-    net = (_3D_Net *)calloc(1, sizeof(_3D_Net));
-    net->rgbColor = rgbColor;
-    net->pSrc = pSrc;
-    net->pDistCount = pDistCount;
-    net->pDist = (uint32_t *)calloc(pDistCount, sizeof(uint32_t));
-    //记录第一个点
-    net->pDist[count] = pDist;
-    count += 1;
-    //记录其它点
-    if (count < pDistCount)
-    {
-        va_start(ap, pDist);
-        for (; count < pDistCount; count++)
-            net->pDist[count] = va_arg(ap, uint32_t);
-        va_end(ap);
-    }
-    //加入到模型的net链表
-    if (model->net == NULL)
-        model->net = net;
+    if (!model)
+        model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
+    
+    if (!model->plane)
+        model->plane = plane = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
     else
     {
-        tmpNet = model->net;
-        while (tmpNet->next)
-            tmpNet = tmpNet->next;
-        tmpNet->next = net;
+        plane = model->plane;
+        while(plane->next)
+            plane = plane->next;
+        plane->next = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
+        plane = plane->next;
     }
+
+    for (i = 0; i < 3; i++)
+    {
+        plane->xyz[i][0] = xyz[i][0];
+        plane->xyz[i][1] = xyz[i][1];
+        plane->xyz[i][2] = xyz[i][2];
+    }
+
+    plane->rgbColor = rgbColor;
+
+    model->planeCount += 1;
+
+    return model;
+}
+
+_3D_Model *model_plane_add2(_3D_Model *model, uint32_t rgbColor, float xyz1[3], float xyz2[3], float xyz3[3])
+{
+    float *_xyz[3] = {xyz1, xyz2, xyz3};
+    return model_plane_add(model, rgbColor, _xyz);
+}
+
+_3D_Model *model_plane_add3(_3D_Model *model, uint32_t rgbColor,
+    float x1, float y1, float z1,
+    float x2, float y2, float z2,
+    float x3, float y3, float z3)
+{
+    float _xyz[3][3] = {
+        {x1, y1, z1},
+        {x2, y2, z2},
+        {x3, y3, z3}
+    };
+    return model_plane_add(model, rgbColor, _xyz);
 }
 
 /*
- *  添加注释
+ *  模型初始化,添加注释
  *  参数:
+ *      model: 传入为NULL时自动创建内存
  *      rgbColor: 连线颜色
  *      label: 注释内容
- *      x, y, z: 位置
+ *      xyz: 位置
+ * 
+ *  返回: 更新后的模型指针
  */
-void model_label_add(_3D_Model *model, uint32_t rgbColor, float x, float y, float z, char *text)
+_3D_Model *model_label_add(_3D_Model *model, uint32_t rgbColor, char *text, float xyz[3])
 {
-    _3D_Label *label, *tmpLabel;
-    //基本参数和内存准备
-    label = (_3D_Label *)calloc(1, sizeof(_3D_Label));
-    label->xyz[0] = x;
-    label->xyz[1] = y;
-    label->xyz[2] = z;
-    label->rgbColor = rgbColor;
-    label->text = (char *)calloc(strlen(text) + 1, sizeof(char));
-    strcpy(label->text, text);
-    //加入到模型的label链表
-    if (model->label == NULL)
-        model->label = label;
+    _3D_Label *label;
+    uint32_t i;
+
+    if (!model)
+        model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
+    
+    if (!model->label)
+        model->label = label = (_3D_Label *)calloc(1, sizeof(_3D_Label));
     else
     {
-        tmpLabel = model->label;
-        while (tmpLabel->next)
-            tmpLabel = tmpLabel->next;
-        tmpLabel->next = label;
+        label = model->label;
+        while(label->next)
+            label = label->next;
+        label->next = (_3D_Label *)calloc(1, sizeof(_3D_Label));
+        label = label->next;
     }
+
+    label->xyz[0] = xyz[0];
+    label->xyz[1] = xyz[1];
+    label->xyz[2] = xyz[2];
+
+    label->rgbColor = rgbColor;
+
+    label->text = (char *)calloc(strlen(text) + 1, 1);
+    strcpy(label->text, text);
+
     model->labelCount += 1;
+
+    return model;
+}
+
+_3D_Model *model_label_add2(_3D_Model *model, uint32_t rgbColor, char *text, float x, float y, float z)
+{
+    float _xyz[3] = {x, y, z};
+    return model_label_add(model, rgbColor, text, _xyz);
 }
 
 // 模型拷贝
 _3D_Model *model_copy(_3D_Model *model)
 {
-    _3D_Net *net, *net2;
+    _3D_Plane *plane, *plane2;
     _3D_Label *label, *label2;
     _3D_Model *model2 = (_3D_Model *)calloc(1, sizeof(_3D_Model));
-    //点数组拷贝
-    model2->pCount = model->pCount;
-    model2->xyz = (float *)calloc(model2->pCount * 3, sizeof(float));
-    model2->rgbColor = (uint32_t *)calloc(model2->pCount, sizeof(uint32_t));
-    memcpy(model2->xyz, model->xyz, sizeof(float) * 3 * model2->pCount);
-    memcpy(model2->rgbColor, model->rgbColor, sizeof(uint32_t) * model2->pCount);
     //net链表拷贝
-    if (model->net)
+    if (model->plane)
     {
-        net = model->net;
-        net2 = model2->net = (_3D_Net *)calloc(1, sizeof(_3D_Net));
+        plane = model->plane;
+        plane2 = model2->plane = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
         do
         {
-            net2->pSrc = net->pSrc;
-            net2->rgbColor = net->rgbColor;
-            net2->pDistCount = net->pDistCount;
-            net2->pDist = (uint32_t *)calloc(net2->pDistCount, sizeof(uint32_t));
-            memcpy(net2->pDist, net->pDist, sizeof(uint32_t) * net2->pDistCount);
+            memcpy(plane2->xyz, plane->xyz, sizeof(float) * 3 * 3);
+            plane2->rgbColor = plane->rgbColor;
             //下一个
-            net = net->next;
-            if (net)
+            plane = plane->next;
+            if (plane)
             {
-                net2->next = (_3D_Net *)calloc(1, sizeof(_3D_Net));
-                net2 = net2->next;
+                plane2->next = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
+                plane2 = plane2->next;
             }
-        } while (net);
+        } while (plane);
     }
     //label链表拷贝
     if (model->label)
@@ -342,22 +173,20 @@ _3D_Model *model_copy(_3D_Model *model)
 // 内存销毁
 void model_release(_3D_Model **model)
 {
-    _3D_Net *net, *netNext;
+    _3D_Plane *plane, *planeNext;
     _3D_Label *label, *labelNext;
     if (model && (*model))
     {
         //释放链表
-        if ((*model)->net)
+        if ((*model)->plane)
         {
-            netNext = (*model)->net;
+            planeNext = (*model)->plane;
             do
             {
-                net = netNext;
-                netNext = netNext->next;
-                if (net->pDist)
-                    free(net->pDist);
-                free(net);
-            } while (netNext);
+                plane = planeNext;
+                planeNext = planeNext->next;
+                free(plane);
+            } while (planeNext);
         }
         //释放链表
         if ((*model)->label)
@@ -372,11 +201,7 @@ void model_release(_3D_Model **model)
                 free(label);
             } while (labelNext);
         }
-        //数组
-        if ((*model)->xyz)
-            free((*model)->xyz);
-        if ((*model)->rgbColor)
-            free((*model)->rgbColor);
+        //
         free((*model));
         (*model) = NULL;
     }
