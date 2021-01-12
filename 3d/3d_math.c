@@ -13,7 +13,9 @@
 #include <string.h>
 #include <math.h>
 
-#define MATH_PI 3.14159265358979323846
+#ifndef M_PI //理论上在 math.h 中有定义
+#define M_PI 3.14159265358979323846
+#endif
 
 /*
  *  quaternion解算
@@ -95,9 +97,9 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
     eInt[1] += ey * Ki;
     eInt[2] += ez * Ki;
     // 调整后的陀螺仪测量
-    gx = valG[0] * MATH_PI / 180 + Kp * ex + eInt[0];
-    gy = valG[1] * MATH_PI / 180 + Kp * ey + eInt[1];
-    gz = valG[2] * MATH_PI / 180 + Kp * ez + eInt[2];
+    gx = valG[0] * M_PI / 180 + Kp * ex + eInt[0];
+    gy = valG[1] * M_PI / 180 + Kp * ey + eInt[1];
+    gz = valG[2] * M_PI / 180 + Kp * ez + eInt[2];
     // 四元数微分方程
     q[0] += (-q[1] * gx - q[2] * gy - q[3] * gz) * halfT;
     q[1] += (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
@@ -150,9 +152,9 @@ void quat_diff(float q[4], float roll_xyz[3])
 void quat_diff2(float q[4], float roll_xyz[3])
 {
     float _roll_xyz[3];
-    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
-    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
-    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    _roll_xyz[0] = roll_xyz[0] * M_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * M_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * M_PI / 180;
     quat_diff(q, _roll_xyz);
 }
 
@@ -203,9 +205,9 @@ void pry_to_quat(float pry[3], float q[4])
 void pry_to_quat2(float pry[3], float q[4])
 {
     float _pry[3];
-    _pry[0] = pry[0] * MATH_PI / 180;
-    _pry[1] = pry[1] * MATH_PI / 180;
-    _pry[2] = pry[2] * MATH_PI / 180;
+    _pry[0] = pry[0] * M_PI / 180;
+    _pry[1] = pry[1] * M_PI / 180;
+    _pry[2] = pry[2] * M_PI / 180;
     pry_to_quat(_pry, q);
 }
 
@@ -220,9 +222,9 @@ void quat_to_pry(float q[4], float pry[3])
 void quat_to_pry2(float q[4], float pry[3])
 {
     quat_to_pry(q, pry);
-    pry[0] *= 180 / MATH_PI;
-    pry[1] *= 180 / MATH_PI;
-    pry[2] *= 180 / MATH_PI;
+    pry[0] *= 180 / M_PI;
+    pry[1] *= 180 / M_PI;
+    pry[2] *= 180 / M_PI;
 }
 
 /*
@@ -648,17 +650,17 @@ void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3])
 void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float _roll_xyz[3];
-    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
-    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
-    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    _roll_xyz[0] = roll_xyz[0] * M_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * M_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * M_PI / 180;
     matrix_xyz(_roll_xyz, xyz, retXyz);
 }
 void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
     float _roll_xyz[3];
-    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
-    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
-    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    _roll_xyz[0] = roll_xyz[0] * M_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * M_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * M_PI / 180;
     matrix_zyx(_roll_xyz, xyz, retXyz);
 }
 
@@ -666,7 +668,7 @@ void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3])
  *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
  * 
  *  参数:
- *      openAngle: 相机开角(单位:rad,范围:(0,pi))
+ *      openAngle: 相机开角(单位:度,范围:(0,180))
  *      xyz[3]: 要计算的空间坐标
  *      ar: 相机的屏幕的宽高比
  *      nearZ: 相机近端距离
@@ -689,7 +691,7 @@ bool projection(
     float retX, retY, retZ;
 
     //快速检查
-    if (openAngle >= 360 || openAngle < 1)
+    if (openAngle >= 180 || openAngle < 1)
         return false;
     if (ar <= 0 ||
         xyz == NULL ||
@@ -699,7 +701,7 @@ bool projection(
         return false;
 
     //度转rad
-    openAngle = openAngle * MATH_PI / 180;
+    openAngle = openAngle * M_PI / 180;
 
     //屏幕高、宽范围(这里是假设屏幕高为2时的数值)
     hMax = 1;
@@ -749,4 +751,138 @@ bool projection(
         return true;
     }
     return false;
+}
+
+//获取平面三角形最长边
+float triangle_max_line(float xy[6])
+{
+    float L1 = sqrt((xy[0] - xy[2]) * (xy[0] - xy[2]) + (xy[1] - xy[3]) * (xy[1] - xy[3]));
+    float L2 = sqrt((xy[0] - xy[4]) * (xy[0] - xy[4]) + (xy[1] - xy[5]) * (xy[1] - xy[5]));
+    float L3 = sqrt((xy[2] - xy[4]) * (xy[2] - xy[4]) + (xy[5] - xy[3]) * (xy[5] - xy[3]));
+    if (L2 > L1)
+    {
+        if (L2 > L3)
+            return L2;
+        else
+            return L3;
+    }
+    else
+    {
+        if (L1 > L3)
+            return L1;
+        else
+            return L3;
+    }
+}
+float triangle_max_line3D(float xy[9])
+{
+    float L1 = (xy[0] - xy[3]) * (xy[0] - xy[3]) + (xy[1] - xy[4]) * (xy[1] - xy[4]) + (xy[2] - xy[5]) * (xy[2] - xy[5]);
+    float L2 = (xy[0] - xy[6]) * (xy[0] - xy[6]) + (xy[1] - xy[7]) * (xy[1] - xy[7]) + (xy[2] - xy[8]) * (xy[2] - xy[8]);
+    float L3 = (xy[3] - xy[6]) * (xy[3] - xy[6]) + (xy[4] - xy[7]) * (xy[4] - xy[7]) + (xy[5] - xy[8]) * (xy[5] - xy[8]);
+    if (L2 > L1)
+    {
+        if (L2 > L3)
+            return sqrt(L2);
+        else
+            return sqrt(L3);
+    }
+    else
+    {
+        if (L1 > L3)
+            return sqrt(L1);
+        else
+            return sqrt(L3);
+    }
+}
+
+/*
+ *  遍历平面三角形里面的每一个点
+ *  参数:
+ *      xy: 3个二维坐标
+ *      retXy: 返回二维坐标数组指针 !! 用完记得释放 !!
+ *
+ *  返回: retXy数组里的坐标个数(理论上是三角形最长边的点的个数)
+ *  参考: https://blog.csdn.net/weixin_34304013/article/details/89063136
+ */
+int triangle_enum(float xy[6], int **retXy)
+{
+    int cMax, c = 0;
+    float div;
+    float i, j;
+    float maxLine = triangle_max_line(xy);
+
+    //返回点个数估算
+    cMax = (int)(maxLine) + 1;
+
+    //1+2+3+4+5...+100=? 等差数列求和问题
+    cMax = cMax * (cMax + 1) / 2;
+
+    //数组内存分配
+    cMax *= 2;
+    *retXy = (int *)calloc(cMax, sizeof(int));
+
+    //分度格
+    div = 1 / maxLine;
+
+    //三角形ABC内一点P
+    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
+    //即遍历所有的i,j,k数值即可获得所有P点
+    for (i = 0; i < 1; i += div)
+    {
+        for (j = 0; j < 1 - i && c < cMax; j += div)
+        {
+            //这里 k = 1 - i - j
+            (*retXy)[c++] = (int)(i * xy[0] + j * xy[2] + (1 - i - j) * xy[4]);
+            (*retXy)[c++] = (int)(i * xy[1] + j * xy[3] + (1 - i - j) * xy[5]);
+        }
+    }
+
+    return c / 2;
+}
+
+/*
+ *  遍历空间平面三角形里面的每一个点
+ *  参数:
+ *      xyz: 3个三维坐标
+ *      retXyz: 返回三维坐标数组指针 !! 用完记得释放 !!
+ *
+ *  返回: retXyz数组里的坐标个数(理论上是三视图投影中点数最多的那个)
+ */
+int triangle_enum3D(float xyz[9], int **retXyz)
+{
+    int cMax, c = 0;
+    float div;
+    float i, j, k;
+    float maxLine = triangle_max_line3D(xyz);
+
+    //由于最长边为空间斜边,密度不够,所以多乘以1.5
+    maxLine *= 1.5;
+
+    //返回点个数估算
+    cMax = (int)(maxLine) + 1;
+
+    //1+2+3+4+5...+100=? 等差数列求和问题
+    cMax = cMax * (cMax + 1) / 2;
+
+    //数组内存分配
+    cMax *= 3;
+    *retXyz = (int *)calloc(cMax, sizeof(int));
+
+    //分度格
+    div = 1 / maxLine;
+
+    //三角形ABC内一点P
+    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
+    //即遍历所有的i,j,k数值即可获得所有P点
+    for (i = 0; i < 1; i += div)
+    {
+        for (j = 0, k = 1 - i; j < 1 - i && c < cMax; j += div, k -= div)
+        {
+            (*retXyz)[c++] = (int)(i * xyz[0] + j * xyz[2] + k * xyz[5]);
+            (*retXyz)[c++] = (int)(i * xyz[1] + j * xyz[3] + k * xyz[6]);
+            (*retXyz)[c++] = (int)(i * xyz[2] + j * xyz[4] + k * xyz[7]);
+        }
+    }
+
+    return c / 3;
 }

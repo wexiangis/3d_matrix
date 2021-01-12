@@ -23,10 +23,4 @@ void _2d_draw_line(
     int32_t *xyStart, int32_t *xyEnd,
     uint32_t rgbColor, uint32_t size);
 
-void _2d_triangle(
-    uint8_t *map, int width, int height,
-    uint32_t p1X, uint32_t p1Y,
-    uint32_t p2X, uint32_t p2Y,
-    uint32_t p3X, uint32_t p3Y);
-
 #endif

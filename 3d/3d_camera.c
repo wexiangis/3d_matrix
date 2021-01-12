@@ -9,14 +9,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+
 #include "3d_camera.h"
 #include "3d_math.h"
+
+#ifndef M_PI //理论上在 math.h 中有定义
+#define M_PI 3.14159265358979323846
+#endif
 
 /*
  *  相机初始化
  *  参数:
  *      width, height: 相机屏幕宽高
- *      openAngle: 相机视野开角, 范围[1,359], 推荐值: 90
+ *      openAngle: 相机视野开角, 范围[1,179], 推荐值: 90
  *      near, far: 可视范围的近端和远端, 要求大于0且far要大于near, 推荐值: near=5 far=1000
  * 
  *  返回: NULL/参数错误
@@ -32,8 +38,9 @@ _3D_Camera *camera_init(
     float *roll_xyz)
 {
     _3D_Camera *camera;
+
     //参数检查
-    if (openAngle > 359 || openAngle < 1 || near < 1 || far <= near)
+    if (openAngle > 179 || openAngle < 1 || near < 1 || far <= near)
         return NULL;
 
     camera = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
@@ -44,15 +51,18 @@ _3D_Camera *camera_init(
     camera->near = near;
     camera->far = far;
     camera->quat[0] = 1;
+
     //照片内存
     camera->photoSize = width * height * 3;
     camera->photoMap = (uint8_t *)calloc(camera->photoSize, sizeof(uint8_t));
-    camera->photoDepth = (int *)calloc(width * height, sizeof(int));
+    camera->photoDepth = (float *)calloc(width * height, sizeof(float));
+
     //初始状态
     if (xyz)
         memcpy(camera->xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
         pry_to_quat2(roll_xyz, camera->quat);
+
     //备份
     camera->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera->backup, camera, sizeof(_3D_Camera));
@@ -97,7 +107,7 @@ _3D_Camera *camera_copy(_3D_Camera *camera)
     //专有指针重新分配内存
     camera2->photoMap = (uint8_t *)calloc(camera2->photoSize, sizeof(uint8_t));
     memcpy(camera2->photoMap, camera->photoMap, camera2->photoSize);
-    camera2->photoDepth = (int *)calloc(camera2->width * camera2->height, sizeof(int));
+    camera2->photoDepth = (float *)calloc(camera2->width * camera2->height, sizeof(float));
     //备份
     camera2->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera2->backup, camera2, sizeof(_3D_Camera));
@@ -167,7 +177,7 @@ void camera_zoom(_3D_Camera *camera, float zoom)
 }
 
 // 锁定目标, 之后 camera_roll 将变成完全绕目标转动
-void camera_lock(_3D_Camera *camera, float *xyz)
+void camera_lock(_3D_Camera *camera, float xyz[3])
 {
     memcpy(camera->lock_xyz, xyz, sizeof(float) * 3);
 }
@@ -176,4 +186,27 @@ void camera_lock(_3D_Camera *camera, float *xyz)
 void camera_unlock(_3D_Camera *camera)
 {
     memset(camera->lock_xyz, 0, sizeof(float) * 3);
+}
+
+/* ---------- 其它 ---------- */
+
+static float _fabs(float v)
+{
+    return v > 0 ? v : (-v);
+}
+
+//空间坐标(相机坐标系)是否在相机可视范围内
+bool camera_isInside(_3D_Camera *camera, float xyz[3])
+{
+    //远近
+    if (xyz[0] < camera->near || xyz[0] > camera->far)
+        return false;
+    //上下
+    if (_fabs(tan(camera->openAngle / 2 * M_PI / 180)) > _fabs(xyz[2] / xyz[0]))
+        return false;
+    //左右
+    if (_fabs(tan(camera->openAngle / 2 * M_PI / 180)) > _fabs(xyz[1] / xyz[0]))
+        return false;
+
+    return true;
 }

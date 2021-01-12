@@ -10,6 +10,7 @@
 #define _3D_CAMERA_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct _3DCamera
 {
@@ -33,8 +34,7 @@ typedef struct _3DCamera
 
     uint32_t photoSize; //照片字节长度 width*height*3
     uint8_t *photoMap;  //照片缓冲区,RGB存储格式,字节长度 width*height*3
-
-    int *photoDepth; //照片(二维点阵)中的每个点的深度信息,当绘制点处于遮挡状态时可以直接不绘制,字节长度 width*height*sizeof(int)
+    float *photoDepth; //照片(二维点阵)中的每个点的深度信息,当绘制点处于遮挡状态时可以不绘制,字节长度 width*height*sizeof(float)
 
     struct _3DCamera *backup; //对初始化时的参数进行备份(注意其中的 photoMap 不要重复释放)
 
@@ -46,7 +46,7 @@ typedef struct _3DCamera
  *  相机初始化
  *  参数:
  *      width, height: 相机屏幕宽高
- *      openAngle: 相机视野开角, 范围[1,359], 推荐值: 90
+ *      openAngle: 相机视野开角, 范围[1,179], 推荐值: 90
  *      near, far: 可视范围的近端和远端, 要求大于0且far要大于near, 推荐值: near=5 far=1000
  *      xyz: 初始位置,不用则置NULL
  *      roll_xyz: 初始角度,不用则置NULL
@@ -98,9 +98,14 @@ void camera_mov2(_3D_Camera *camera, float upDown, float leftRight, float frontB
 void camera_zoom(_3D_Camera *camera, float zoom);
 
 // 锁定目标, 之后 camera_roll 将变成完全绕目标转动
-void camera_lock(_3D_Camera *camera, float *xyz);
+void camera_lock(_3D_Camera *camera, float xyz[3]);
 
 // 解除锁定
 void camera_unlock(_3D_Camera *camera);
+
+/* ---------- 其它 ---------- */
+
+//空间坐标(相机坐标系)是否在相机可视范围内
+bool camera_isInside(_3D_Camera *camera, float xyz[3]);
 
 #endif

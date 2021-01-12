@@ -14,7 +14,7 @@
 // 三维空间的三角平面(任意多边形可以通过"三角剖分"拆分为有限个三角形的组合)
 typedef struct _3DPlane
 {
-    float xyz[3][3];
+    float xyz[9];
     uint32_t rgbColor; //面颜色
     struct _3DPlane *next;
 } _3D_Plane;
@@ -33,8 +33,6 @@ typedef struct _3DModel
 {
     _3D_Plane *plane;    //三角平面链表
     _3D_Label *label;    //注释链表
-    uint32_t planeCount; //平面链表长度
-    uint32_t labelCount; //注释链表长度
 } _3D_Model;
 
 /*
@@ -42,11 +40,12 @@ typedef struct _3DModel
  *  参数:
  *      model: 传入为NULL时自动创建内存
  *      rgbColor: 平面颜色
- *      xyz: 三个点的位置
+ *      xyz[3 * planeCount]: 三个点的坐标数组
+ *      planeCount: 三角平面个数,决定xyz字节长度: planeCount * 3 * sizeof(float)
  * 
  *  返回: 更新后的模型指针
  */
-_3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float xyz[3][3]);
+_3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float *xyz, uint32_t planeCount);
 _3D_Model *model_plane_add2(_3D_Model *model, uint32_t rgbColor, float xyz1[3], float xyz2[3], float xyz3[3]);
 _3D_Model *model_plane_add3(_3D_Model *model, uint32_t rgbColor,
     float x1, float y1, float z1,

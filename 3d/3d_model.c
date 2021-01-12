@@ -9,27 +9,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "3d_model.h"
 
-#define _3D_MODEL_PI 3.1415926535897
+#include "3d_model.h"
 
 /*
  *  模型初始化,添加三角平面
  *  参数:
  *      model: 传入为NULL时自动创建内存
  *      rgbColor: 平面颜色
- *      xyz: 三个点的位置
+ *      xyz[9 * planeCount]: 三个点的坐标数组
+ *      planeCount: 三角平面个数,决定 xyz 数组的字节长度: planeCount * 9 * sizeof(float)
  * 
  *  返回: 更新后的模型指针
  */
-_3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float xyz[3][3])
+_3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float *xyz, uint32_t planeCount)
 {
     _3D_Plane *plane;
-    uint32_t i;
+    uint32_t i = 0;
 
     if (!model)
         model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
+
+    if (planeCount < 1)
+        return model;
     
+    //取链表节点
     if (!model->plane)
         model->plane = plane = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
     else
@@ -41,24 +45,32 @@ _3D_Model *model_plane_add(_3D_Model *model, uint32_t rgbColor, float xyz[3][3])
         plane = plane->next;
     }
 
-    for (i = 0; i < 3; i++)
+    //逐个添加平面
+    while(1)
     {
-        plane->xyz[i][0] = xyz[i][0];
-        plane->xyz[i][1] = xyz[i][1];
-        plane->xyz[i][2] = xyz[i][2];
+        //参数拷贝
+        memcpy(plane->xyz, xyz, sizeof(float) * 9);
+        plane->rgbColor = rgbColor;
+        //下一个
+        if (++i < planeCount)
+        {
+            xyz += 9;
+            plane->next = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
+            plane = plane->next;
+        }
     }
-
-    plane->rgbColor = rgbColor;
-
-    model->planeCount += 1;
 
     return model;
 }
 
 _3D_Model *model_plane_add2(_3D_Model *model, uint32_t rgbColor, float xyz1[3], float xyz2[3], float xyz3[3])
 {
-    float *_xyz[3] = {xyz1, xyz2, xyz3};
-    return model_plane_add(model, rgbColor, _xyz);
+    float _xyz[9] = {
+        xyz1[0], xyz1[1], xyz1[2],
+        xyz2[0], xyz2[1], xyz2[2],
+        xyz3[0], xyz3[1], xyz3[2],
+    };
+    return model_plane_add(model, rgbColor, _xyz, 1);
 }
 
 _3D_Model *model_plane_add3(_3D_Model *model, uint32_t rgbColor,
@@ -66,12 +78,12 @@ _3D_Model *model_plane_add3(_3D_Model *model, uint32_t rgbColor,
     float x2, float y2, float z2,
     float x3, float y3, float z3)
 {
-    float _xyz[3][3] = {
-        {x1, y1, z1},
-        {x2, y2, z2},
-        {x3, y3, z3}
+    float _xyz[9] = {
+        x1, y1, z1,
+        x2, y2, z2,
+        x3, y3, z3,
     };
-    return model_plane_add(model, rgbColor, _xyz);
+    return model_plane_add(model, rgbColor, _xyz, 1);
 }
 
 /*
@@ -87,11 +99,11 @@ _3D_Model *model_plane_add3(_3D_Model *model, uint32_t rgbColor,
 _3D_Model *model_label_add(_3D_Model *model, uint32_t rgbColor, char *text, float xyz[3])
 {
     _3D_Label *label;
-    uint32_t i;
 
     if (!model)
         model = (_3D_Model *)calloc(1, sizeof(_3D_Model));
     
+    //取链表节点
     if (!model->label)
         model->label = label = (_3D_Label *)calloc(1, sizeof(_3D_Label));
     else
@@ -103,16 +115,13 @@ _3D_Model *model_label_add(_3D_Model *model, uint32_t rgbColor, char *text, floa
         label = label->next;
     }
 
+    //参数拷贝
     label->xyz[0] = xyz[0];
     label->xyz[1] = xyz[1];
     label->xyz[2] = xyz[2];
-
     label->rgbColor = rgbColor;
-
     label->text = (char *)calloc(strlen(text) + 1, 1);
     strcpy(label->text, text);
-
-    model->labelCount += 1;
 
     return model;
 }
@@ -136,7 +145,7 @@ _3D_Model *model_copy(_3D_Model *model)
         plane2 = model2->plane = (_3D_Plane *)calloc(1, sizeof(_3D_Plane));
         do
         {
-            memcpy(plane2->xyz, plane->xyz, sizeof(float) * 3 * 3);
+            memcpy(plane2->xyz, plane->xyz, sizeof(float) * 9);
             plane2->rgbColor = plane->rgbColor;
             //下一个
             plane = plane->next;

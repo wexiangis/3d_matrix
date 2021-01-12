@@ -16,7 +16,7 @@
 #include "3d_model.h"
 #include "3d_math.h"
 
-// 单元的运动控制状态
+// 单元的运动控制状态(模型原点的运行动)
 typedef struct _3DSport
 {
     float xyz[3];         //质心在空间中的位置
