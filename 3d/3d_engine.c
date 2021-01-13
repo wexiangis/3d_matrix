@@ -208,28 +208,60 @@ bool engine_model_remove(_3D_Engine *engine, _3D_Sport *sport)
 }
 
 /*
+ *  模型根据当前运动状态更新位置
+ *  参数:
+ *      xyz[3 * pointTotal]: 坐标点数组
+ *      retXyz[3 * pointTotal]: 坐标点数组
+ *      pointTotal: 数组中坐标点的个数
+ */
+static void engine_position(_3D_Sport *sport, float *xyz, float *retXyz, uint32_t pointTotal)
+{
+    uint32_t xyzCount;
+    //转存
+    for (xyzCount = 0; xyzCount < pointTotal * 3; xyzCount++)
+        retXyz[xyzCount] = xyz[xyzCount];
+    //先旋转
+    for (xyzCount = 0; xyzCount < pointTotal * 3; xyzCount += 3)
+    {
+        //用姿态四元数直接旋转向量
+        quat_roll(sport->quat, NULL, 0, &retXyz[xyzCount], false);
+    }
+    //再平移
+    for (xyzCount = 0; xyzCount < pointTotal * 3;)
+    {
+        //注意这里要反方向平移
+        retXyz[xyzCount++] += sport->xyz[0];
+        retXyz[xyzCount++] += sport->xyz[1];
+        retXyz[xyzCount++] += sport->xyz[2];
+    }
+}
+
+/*
  *  三维坐标点相对于相机的位置转换
  *  参数:
  *      xyz[3 * pointTotal]: 坐标点数组
+ *      retXyz[3 * pointTotal]: 坐标点数组
  *      pointTotal: 数组中坐标点的个数
  */
-static void engine_position_of_camera(_3D_Camera *camera, float *xyz, uint32_t pointTotal)
+static void engine_position_of_camera(_3D_Camera *camera, float *xyz, float *retXyz, uint32_t pointTotal)
 {
     uint32_t xyzCount;
     //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
     for (xyzCount = 0; xyzCount < pointTotal * 3;)
     {
         //注意这里要反方向平移
-        xyz[xyzCount++] -= camera->xyz[0];
-        xyz[xyzCount++] -= camera->xyz[1];
-        xyz[xyzCount++] -= camera->xyz[2];
+        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[0];
+        xyzCount += 1;
+        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[1];
+        xyzCount += 1;
+        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[2];
+        xyzCount += 1;
     }
     //再把相机自身的旋转转嫁为坐标点相对相机的旋转
     for (xyzCount = 0; xyzCount < pointTotal * 3; xyzCount += 3)
     {
-        // quat_to_pry(camera->quat, roll_xyz);
-        // matrix_xyz(roll_xyz, &xyz[xyzCount], &xyz[xyzCount]);
-        quat_roll(camera->quat, NULL, 0, &xyz[xyzCount], true);
+        //用姿态四元数直接旋转向量
+        quat_roll(camera->quat, NULL, 0, &retXyz[xyzCount], true);
     }
 }
 
@@ -237,7 +269,7 @@ static void engine_position_of_camera(_3D_Camera *camera, float *xyz, uint32_t p
  *  透视投影三维坐标点到相机的二维平面
  *      xyz[3 * pointTotal]: 坐标点数组
  *      pointTotal: 数组中坐标点的个数
- *      xy: 返回平面坐标数组
+ *      xy: 返回屏幕中的坐标
  *      depth: 返回每个 xy 点的深度信息,单位:点
  *      inside: 返回每个 xy 点是否在屏幕内
  */
@@ -245,42 +277,49 @@ static void engine_project_into_camera(
     _3D_Camera *camera,
     float *xyz,
     uint32_t pointTotal,
-    float *xy,
+    uint32_t *xy,
     float *depth,
     bool *inside)
 {
-    uint32_t cInside, cXy, cXyz; //三个数组的指针移动计数
+    float _xy[2];
+    uint32_t cI, cD, cXy, cXyz; //三个数组的指针移动计数
     //处理每一个点
-    for (cInside = cXy = cXyz = 0; cInside < pointTotal; cInside += 1, cXy += 2, cXyz += 3)
+    for (cI = cD = cXy = cXyz = 0; cI < pointTotal; cXyz += 3)
     {
-        //根据相机参数进行透视投影
-        inside[cInside] = projection(
+        //再根据透视投影,得到具体的二维坐标和深度信息
+        inside[cI++] = projection(
             camera->openAngle,
             &xyz[cXyz],
             camera->ar,
             camera->near,
             camera->far,
-            &xy[cXy],
-            &depth[cInside]);
+            _xy,
+            &depth[cD++]);
         //由于投影矩阵计算时是假设屏幕高为2(继而宽为2ar)的情况下计算,这里需对坐标进行比例恢复
-        xy[cXy] = xy[cXy] / (2 * camera->ar) * camera->width;
-        xy[cXy + 1] = xy[cXy + 1] / 2 * camera->height;
+        _xy[0] = _xy[0] / (2 * camera->ar) * camera->width;
+        _xy[1] = _xy[1] / 2 * camera->height;
         //把坐标原点移动到屏幕中心
-        xy[cXy] = xy[cXy] + camera->width / 2;
-        xy[cXy + 1] = camera->height / 2 - xy[cXy + 1];
+        xy[cXy++] = (uint32_t)(_xy[0] + camera->width / 2);
+        xy[cXy++] = (uint32_t)(camera->height / 2 - _xy[1]);
     }
 }
 
 // 相机抓拍,照片缓存在 camera->photoMap
 void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
 {
-    uint32_t count;
     float xyz[3 * 3]; //3个三维坐标
-    float xy[3 * 2]; //3个二维坐标
-    float depth[3]; //3个坐标的深度信息
-    bool inside[3]; //3个坐标是否入屏
+    uint32_t xy[2]; //在相机屏幕中的坐标
+    float depth; //在相机屏幕中的深度
+    bool inside; //是否入屏
+
+    uint32_t c;
+    uint32_t offset;
+
+    int32_t ret; //遍历空间三角平面后返回的点数量
+    float *retXyz; //遍历空间三角平面后返回的坐标数组
 
     _3D_Unit *unit;
+    _3D_Line *line;
     _3D_Plane *plane;
     _3D_Label *label;
 
@@ -289,22 +328,65 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
     while (unit)
     {
         //遍历plane链表
+        line = unit->model->line;
+        while (line)
+        {
+            //根据运动状态更新位置
+            engine_position(unit->sport, line->xyz, xyz, 2);
+            //坐标点相对于相机的位置变化
+            engine_position_of_camera(camera, xyz, xyz, 2);
+
+            //有任意一点入屏
+            if (camera_isInside(camera, &xyz[0]) ||
+                camera_isInside(camera, &xyz[3]))
+            {
+                //遍历空间直线上的所有点
+                ret = 0;
+                for (c = 0; c < ret * 3; c += 3)
+                {
+                    ;
+                }
+            }
+
+            //下一个
+            line = line->next;
+        }
+
+        //遍历plane链表
         plane = unit->model->plane;
         while (plane)
         {
-            //拷贝坐标数组
-            for (count = 0; count < 9; count++)
-                xyz[count] = plane->xyz[count];
-
+            //根据运动状态更新位置
+            engine_position(unit->sport, plane->xyz, xyz, 3);
             //坐标点相对于相机的位置变化
-            engine_position_of_camera(camera, xyz, 3);
-            //透视投影三维坐标点到相机的二维平面,得到二维坐标点信息
-            engine_project_into_camera(camera, xyz, 3, xy, depth, inside);
+            engine_position_of_camera(camera, xyz, xyz, 3);
 
-            //画三角平面
-            if (inside[0] || inside[1] || inside[2]) //有任意一点入屏
+            //有任意一点入屏
+            // if (camera_isInside(camera, &xyz[0]) ||
+            //     camera_isInside(camera, &xyz[3]) ||
+            //     camera_isInside(camera, &xyz[6]))
             {
-                ;
+                //遍历空间三角平面上的所有点
+                ret = triangle_enum3Dp(xyz, &retXyz, camera->pixelOfScreen / 10);
+                for (c = 0; c < ret * 3; c += 3)
+                {
+                    //获取该点在相机平面中的"二维坐标"和"深度信息"
+                    engine_project_into_camera(camera, &retXyz[c], 1, xy, &depth, &inside);
+                    //再次检查入屏 && 没有被遮挡
+                    offset = xy[1] * camera->width + xy[0];
+                    if (inside && depth < camera->photoDepth[offset])
+                    {
+                        //占用该点
+                        camera->photoDepth[offset] = depth;
+                        //画点
+                        offset *= 3;//像素偏移
+                        camera->photoMap[offset++] = (uint8_t)((plane->argbColor >> 16) & 0xFF);
+                        camera->photoMap[offset++] = (uint8_t)((plane->argbColor >> 8) & 0xFF);
+                        camera->photoMap[offset++] = (uint8_t)(plane->argbColor & 0xFF);
+                    }
+                }
+                //内存回收
+                free(retXyz);
             }
 
             //下一个
@@ -315,19 +397,28 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
         label = unit->model->label;
         while (label)
         {
-            //拷贝坐标
-            for (count = 0; count < 3; count++)
-                xyz[count] = label->xyz[count];
-
+            //根据运动状态更新位置
+            engine_position(unit->sport, label->xyz, xyz, 1);
             //坐标点相对于相机的位置变化
-            engine_position_of_camera(camera, xyz, 1);
-            //透视投影三维坐标点到相机的二维平面,得到二维坐标点信息
-            engine_project_into_camera(camera, xyz, 1, xy, depth, inside);
+            engine_position_of_camera(camera, xyz, xyz, 1);
 
-            //画点
-            ;
-            //画label
-            ;
+            //目标点入屏
+            if (camera_isInside(camera, xyz))
+            {
+                //获取该点在相机平面中的"二维坐标"和"深度信息"
+                engine_project_into_camera(camera, xyz, 1, xy, &depth, &inside);
+                //再次检查入屏 && 没有被遮挡
+                offset = xy[1] * camera->width + xy[0];
+                if (inside && depth < camera->photoDepth[offset])
+                {
+                    //占用该点
+                    camera->photoDepth[offset] = depth;
+                    //画点
+                    ;
+                    //画label
+                    ;
+                }
+            }
 
             //下一个
             label = label->next;

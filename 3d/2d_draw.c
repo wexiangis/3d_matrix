@@ -14,7 +14,7 @@ void _2d_draw_dot(
     uint8_t *rgbMap,
     uint32_t width, uint32_t height,
     int32_t *xy,
-    uint32_t rgbColor, uint32_t size)
+    uint32_t argbColor, uint32_t size)
 {
     uint32_t offset;
     //范围限制
@@ -24,9 +24,9 @@ void _2d_draw_dot(
         return;
     //偏移量
     offset = xy[1] * width * 3 + xy[0] * 3;
-    rgbMap[offset + 0] = (rgbColor >> 16) & 0xFF;
-    rgbMap[offset + 1] = (rgbColor >> 8) & 0xFF;
-    rgbMap[offset + 2] = (rgbColor >> 0) & 0xFF;
+    rgbMap[offset + 0] = (argbColor >> 16) & 0xFF;
+    rgbMap[offset + 1] = (argbColor >> 8) & 0xFF;
+    rgbMap[offset + 2] = (argbColor >> 0) & 0xFF;
     //加大尺寸
     ;
 }
@@ -35,7 +35,7 @@ void _2d_draw_line(
     uint8_t *rgbMap,
     uint32_t width, uint32_t height,
     int32_t *xyStart, int32_t *xyEnd,
-    uint32_t rgbColor, uint32_t size)
+    uint32_t argbColor, uint32_t size)
 {
     int32_t xerr = 0, yerr = 0;
     int32_t delta_x, delta_y;
@@ -93,9 +93,9 @@ void _2d_draw_line(
         {
             //偏移量
             offset = yCount * width * 3 + xCount * 3;
-            rgbMap[offset + 0] = (rgbColor >> 16) & 0xFF;
-            rgbMap[offset + 1] = (rgbColor >> 8) & 0xFF;
-            rgbMap[offset + 2] = (rgbColor >> 0) & 0xFF;
+            rgbMap[offset + 0] = (argbColor >> 16) & 0xFF;
+            rgbMap[offset + 1] = (argbColor >> 8) & 0xFF;
+            rgbMap[offset + 2] = (argbColor >> 0) & 0xFF;
             //加大尺寸
             ;
         }

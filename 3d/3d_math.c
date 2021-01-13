@@ -709,27 +709,29 @@ bool projection(
     wMax = ar;
     wMin = -ar;
 
-    /*                          [project matrix]
+    /*                      [project matrix]
     *
-    *   1/ar/tan(a/2)           0               0               0   
-    *       0               1/tan(a/2)          0               0
-    *       0                   0     ((-nZ)-fZ)/(nZ-fZ)  2*fZ*nZ/(nZ-fZ)
-    *       0                   0               1               0
+    *   1/ar/tan(a/2)      0                0               0   
+    *       0          1/tan(a/2)           0               0
+    *       0              0      ((-nZ)-fZ)/(nZ-fZ)  2*fZ*nZ/(nZ-fZ)
+    *       0              0                1               0
     *
     *   ar: camera width/height
     *   a: camera open angle
     *   nZ: camera near Z
     *   fZ: camera far Z
     *
-    *                   |x|               |retX|
-    *   [project matrix]|y| and then /z = |retY|
-    *                   |z|               |retZ|
-    *                   |1|               | 1  |
+    *                   |x|                |retX|
+    *   [project matrix]|y| and then 1/z = |retY|
+    *                   |z|                |retZ|
+    *                   |1|                | 1  |
     *
     *   output point request: retX in the range of (-ar, ar)
     *                         retY in the range of (-1, 1)
     *                         retZ in the range of (-1, 1)
     */
+
+    //这里把XYZ轴顺序调换为YZX了
     retX = xyz[1] / ar / tan(openAngle / 2) / xyz[0];
     retY = xyz[2] / tan(openAngle / 2) / xyz[0];
     retZ = ((-nearZ) - farZ) / (nearZ - farZ) + 2 * farZ * nearZ / (nearZ - farZ) / xyz[0];
@@ -804,11 +806,11 @@ float triangle_max_line3D(float xy[9])
  *  返回: retXy数组里的坐标个数(理论上是三角形最长边的点的个数)
  *  参考: https://blog.csdn.net/weixin_34304013/article/details/89063136
  */
-int triangle_enum(float xy[6], int **retXy)
+int triangle_enum(float xy[6], float **retXy)
 {
     int cMax, c = 0;
     float div;
-    float i, j;
+    float i, j, k;
     float maxLine = triangle_max_line(xy);
 
     //返回点个数估算
@@ -819,7 +821,7 @@ int triangle_enum(float xy[6], int **retXy)
 
     //数组内存分配
     cMax *= 2;
-    *retXy = (int *)calloc(cMax, sizeof(int));
+    *retXy = (float *)calloc(cMax, sizeof(float));
 
     //分度格
     div = 1 / maxLine;
@@ -831,10 +833,58 @@ int triangle_enum(float xy[6], int **retXy)
     {
         for (j = 0; j < 1 - i && c < cMax; j += div)
         {
-            //这里 k = 1 - i - j
-            (*retXy)[c++] = (int)(i * xy[0] + j * xy[2] + (1 - i - j) * xy[4]);
-            (*retXy)[c++] = (int)(i * xy[1] + j * xy[3] + (1 - i - j) * xy[5]);
+            k = 1 - i - j;
+            (*retXy)[c++] = i * xy[0] + j * xy[2] + k * xy[4];
+            (*retXy)[c++] = i * xy[1] + j * xy[3] + k * xy[5];
         }
+    }
+
+    return c / 2;
+}
+
+#include <stdlib.h>
+#include <unistd.h>
+#include "fbmap.h"
+int triangle_enum2(char *map, int w, int h, float xy[6], float **retXy)
+{
+    int cMax, c = 0;
+    float div;
+    float i, j, k;
+    float x, y;
+    int offset;
+    float maxLine = triangle_max_line(xy);
+
+    //返回点个数估算
+    cMax = (int)(maxLine) + 1;
+
+    //1+2+3+4+5...+100=? 等差数列求和问题
+    cMax = cMax * (cMax + 1) / 2;
+
+    //数组内存分配
+    cMax *= 2;
+    *retXy = (float *)calloc(cMax, sizeof(float));
+
+    //分度格
+    div = 1 / maxLine;
+
+    //三角形ABC内一点P
+    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
+    //即遍历所有的i,j,k数值即可获得所有P点
+    for (i = 0; i < 1; i += div)
+    {
+        for (j = 0; j < 1 - i && c < cMax; j += div)
+        {
+            k = 1 - i - j;
+            (*retXy)[c++] = x = i * xy[0] + j * xy[2] + k * xy[4];
+            (*retXy)[c++] = y = i * xy[1] + j * xy[3] + k * xy[5];
+            
+            offset = ((int)y * w + (int)x) * 3;
+            map[offset++] = 0xFF;
+            map[offset++] = 0x00;
+            map[offset++] = 0x00;
+        }
+        fb_output((uint8_t *)map, 0, 0, w, h);
+        usleep(1000);
     }
 
     return c / 2;
@@ -848,15 +898,12 @@ int triangle_enum(float xy[6], int **retXy)
  *
  *  返回: retXyz数组里的坐标个数(理论上是三视图投影中点数最多的那个)
  */
-int triangle_enum3D(float xyz[9], int **retXyz)
+int triangle_enum3D(float xyz[9], float **retXyz)
 {
     int cMax, c = 0;
     float div;
     float i, j, k;
     float maxLine = triangle_max_line3D(xyz);
-
-    //由于最长边为空间斜边,密度不够,所以多乘以1.5
-    maxLine *= 1.5;
 
     //返回点个数估算
     cMax = (int)(maxLine) + 1;
@@ -866,7 +913,7 @@ int triangle_enum3D(float xyz[9], int **retXyz)
 
     //数组内存分配
     cMax *= 3;
-    *retXyz = (int *)calloc(cMax, sizeof(int));
+    *retXyz = (float *)calloc(cMax, sizeof(float));
 
     //分度格
     div = 1 / maxLine;
@@ -876,11 +923,52 @@ int triangle_enum3D(float xyz[9], int **retXyz)
     //即遍历所有的i,j,k数值即可获得所有P点
     for (i = 0; i < 1; i += div)
     {
-        for (j = 0, k = 1 - i; j < 1 - i && c < cMax; j += div, k -= div)
+        for (j = 0; j < 1 - i && c < cMax; j += div)
         {
-            (*retXyz)[c++] = (int)(i * xyz[0] + j * xyz[2] + k * xyz[5]);
-            (*retXyz)[c++] = (int)(i * xyz[1] + j * xyz[3] + k * xyz[6]);
-            (*retXyz)[c++] = (int)(i * xyz[2] + j * xyz[4] + k * xyz[7]);
+            k = 1 - i - j;
+            (*retXyz)[c++] = i * xyz[0] + j * xyz[3] + k * xyz[6];
+            (*retXyz)[c++] = i * xyz[1] + j * xyz[4] + k * xyz[7];
+            (*retXyz)[c++] = i * xyz[2] + j * xyz[5] + k * xyz[8];
+        }
+    }
+
+    return c / 3;
+}
+int triangle_enum3Dp(float xyz[9], float **retXyz, float pow)
+{
+    int cMax, c = 0;
+    float div;
+    float i, j, k;
+    float maxLine = triangle_max_line3D(xyz);
+
+    //密度不够,可以多乘以X被
+    if (pow > 0)
+        maxLine *= pow;
+
+    //返回点个数估算
+    cMax = (int)(maxLine) + 1;
+
+    //1+2+3+4+5...+100=? 等差数列求和问题
+    cMax = cMax * (cMax + 1) / 2;
+
+    //数组内存分配
+    cMax *= 3;
+    *retXyz = (float *)calloc(cMax, sizeof(float));
+
+    //分度格
+    div = 1 / maxLine;
+
+    //三角形ABC内一点P
+    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
+    //即遍历所有的i,j,k数值即可获得所有P点
+    for (i = 0; i < 1; i += div)
+    {
+        for (j = 0; j < 1 - i && c < cMax; j += div)
+        {
+            k = 1 - i - j;
+            (*retXyz)[c++] = i * xyz[0] + j * xyz[3] + k * xyz[6];
+            (*retXyz)[c++] = i * xyz[1] + j * xyz[4] + k * xyz[7];
+            (*retXyz)[c++] = i * xyz[2] + j * xyz[5] + k * xyz[8];
         }
     }
 

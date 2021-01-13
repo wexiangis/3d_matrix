@@ -121,7 +121,8 @@ float triangle_max_line(float xy[6]);
  *
  *  返回: retXy数组里的坐标个数(理论上是三角形最长边的点的个数)
  */
-int triangle_enum(float xy[6], int **retXy);
+int triangle_enum(float xy[6], float **retXy);
+int triangle_enum2(char *map, int w, int h, float xy[6], float **retXy); //测试用
 
 /*
  *  遍历空间平面三角形里面的每一个点
@@ -131,6 +132,7 @@ int triangle_enum(float xy[6], int **retXy);
  *
  *  返回: retXyz数组里的坐标个数(理论上是三视图投影中点数最多的那个)
  */
-int triangle_enum3D(float xyz[9], int **retXyz);
+int triangle_enum3D(float xyz[9], float **retXyz);
+int triangle_enum3Dp(float xyz[9], float **retXyz, float pow); //pow: 0或者1时使用默认倍数
 
 #endif

@@ -52,10 +52,12 @@ _3D_Camera *camera_init(
     camera->far = far;
     camera->quat[0] = 1;
 
+    camera->pixelOfScreen = ((float)height / 2) / tan(openAngle * M_PI / 180 / 2) / near;
+
     //照片内存
     camera->photoSize = width * height * 3;
     camera->photoMap = (uint8_t *)calloc(camera->photoSize, sizeof(uint8_t));
-    camera->photoDepth = (float *)calloc(width * height, sizeof(float));
+    camera->photoDepth = (uint32_t *)calloc(width * height, sizeof(uint32_t));
 
     //初始状态
     if (xyz)
@@ -77,18 +79,18 @@ void camera_reset(_3D_Camera *camera)
 }
 
 // 清空照片
-void camera_photo_clear(_3D_Camera *camera, uint32_t rgbColor)
+void camera_photo_clear(_3D_Camera *camera, uint32_t argbColor)
 {
     uint32_t mapCount, depthCount;
-    uint8_t r = (rgbColor >> 16) & 0xFF;
-    uint8_t g = (rgbColor >> 8) & 0xFF;
-    uint8_t b = (rgbColor >> 0) & 0xFF;
+    uint8_t r = (argbColor >> 16) & 0xFF;
+    uint8_t g = (argbColor >> 8) & 0xFF;
+    uint8_t b = (argbColor >> 0) & 0xFF;
     for (mapCount = depthCount = 0; mapCount < camera->photoSize;)
     {
         camera->photoMap[mapCount++] = r;
         camera->photoMap[mapCount++] = g;
         camera->photoMap[mapCount++] = b;
-        camera->photoDepth[depthCount++] = 0;
+        camera->photoDepth[depthCount++] = camera->far;//设置为最远
     }
 }
 
@@ -107,7 +109,7 @@ _3D_Camera *camera_copy(_3D_Camera *camera)
     //专有指针重新分配内存
     camera2->photoMap = (uint8_t *)calloc(camera2->photoSize, sizeof(uint8_t));
     memcpy(camera2->photoMap, camera->photoMap, camera2->photoSize);
-    camera2->photoDepth = (float *)calloc(camera2->width * camera2->height, sizeof(float));
+    camera2->photoDepth = (uint32_t *)calloc(camera2->width * camera2->height, sizeof(uint32_t));
     //备份
     camera2->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
     memcpy(camera2->backup, camera2, sizeof(_3D_Camera));
@@ -198,14 +200,16 @@ static float _fabs(float v)
 //空间坐标(相机坐标系)是否在相机可视范围内
 bool camera_isInside(_3D_Camera *camera, float xyz[3])
 {
+    float a;
     //远近
     if (xyz[0] < camera->near || xyz[0] > camera->far)
         return false;
+    a = camera->openAngle / 2 * M_PI / 180;
     //上下
-    if (_fabs(tan(camera->openAngle / 2 * M_PI / 180)) > _fabs(xyz[2] / xyz[0]))
+    if (_fabs(tan(a)) < _fabs(xyz[2] / xyz[0]))
         return false;
     //左右
-    if (_fabs(tan(camera->openAngle / 2 * M_PI / 180)) > _fabs(xyz[1] / xyz[0]))
+    if (_fabs(tan(a)) < _fabs(xyz[1] / xyz[0]))
         return false;
 
     return true;

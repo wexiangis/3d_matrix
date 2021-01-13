@@ -6,7 +6,7 @@
 #include "bmp.h"
 #include "key.h"
 
-#if 0
+#if 1
 
 //使能输出帧图片
 // #define OUTPUT_FRAME_FOLDER "./frameOutput"
@@ -126,18 +126,22 @@ int main(int argc, char **argv)
     //引擎启动
     engine_start(engine);
 
-    //给模型1 x轴 的初速度,单位:点/秒
-    // sport1->speed[0] = 50;
+    if (sport1)
+    {
+        //给模型1 x轴 的初速度,单位:点/秒
+        // sport1->speed[0] = 50;
+        //给模型1 x轴,y轴 的旋转初速度,单位:度/秒
+        sport1->speed_angle[0] = 90;
+        // sport1->speed_angle[1] = 90;
+    }
 
-    //给模型2 z轴 的初速度,单位:点/秒
-    // sport2->speed[2] = 50;
-
-    //给模型1 x轴,y轴 的旋转初速度,单位:度/秒
-    sport1->speed_angle[0] = 90;
-    // sport1->speed_angle[1] = 90;
-
-    //给模型2 z轴 的旋转初速度,单位:度/秒
-    sport2->speed_angle[1] = 90;
+    if (sport2)
+    {
+        //给模型2 z轴 的初速度,单位:点/秒
+        // sport2->speed[1] = 50;
+        //给模型2 z轴 的旋转初速度,单位:度/秒
+        sport2->speed_angle[1] = 90;
+    }
 
     //注册按键回调
     key_register(NULL, &key_callback);
@@ -214,66 +218,34 @@ void all_init(void)
     camera2 = camera_init(300, 300, 90, 5, 1000, camera2_xyz, camera2_roll_xyz);
     camera3 = camera_init(300, 300, 90, 5, 1000, camera3_xyz, camera3_roll_xyz);
 
-    // //模型0初始化: 空间xyz坐标轴
-    // model0 = model_init(6,
-    //     50.0, 0.0, 0.0, 0x800000,
-    //     -50.0, 0.0, 0.0, 0x800000,
-    //     0.0, 50.0, 0.0, 0x008000,
-    //     0.0, -50.0, 0.0, 0x008000,
-    //     0.0, 0.0, 50.0, 0x000080,
-    //     0.0, 0.0, -50.0, 0x000080);
-    // model_net_add(model0, 0x800000, 0, 1, 1); //连线关系
-    // model_net_add(model0, 0x008000, 2, 1, 3);
-    // model_net_add(model0, 0x000080, 4, 1, 5);
-    // model_label_add(model0, 0x800000, 50.0, 0.0, 0.0, "X"); //注释
-    // model_label_add(model0, 0x008000, 0.0, 50.0, 0.0, "Y");
-    // model_label_add(model0, 0x000080, 0.0, 0.0, 50.0, "Z");
+    //模型0初始化: 空间xyz坐标轴
+    model0 = model_line_add3(NULL, 0x800000, 50, 0, 0, -50, 0, 0); //红色X轴
+    model0 = model_line_add3(model0, 0x008000, 0, 50, 0, 0, -50, 0); //绿色Y轴
+    model0 = model_line_add3(model0, 0x000080, 0, 0, 50, 0, 0, -50); //蓝色Z轴
 
-    // //模型1初始化: 长方体 (注意!! 变长参数中的float类型一定要0.0格式)
-    // model1 = model_init(8,
-    //     10.0, 20.0, 30.0, 0xFFFFFF,
-    //     10.0, -20.0, 30.0, 0xFFFFFF,
-    //     10.0, -20.0, -30.0, 0xFFFFFF,
-    //     10.0, 20.0, -30.0, 0xFFFFFF,
-    //     -10.0, 20.0, -30.0, 0xFFFFFF,
-    //     -10.0, 20.0, 30.0, 0xFFFFFF,
-    //     -10.0, -20.0, 30.0, 0xFFFFFF,
-    //     -10.0, -20.0, -30.0, 0xFFFFFF);
-    // model_net_add(model1, 0xFFFFFF, 0, 3, 1, 3, 5); //连线关系
-    // model_net_add(model1, 0xFFFFFF, 1, 2, 2, 6);
-    // model_net_add(model1, 0xFFFFFF, 2, 2, 3, 7);
-    // model_net_add(model1, 0xFFFFFF, 3, 1, 4);
-    // model_net_add(model1, 0xFFFFFF, 4, 2, 5, 7);
-    // model_net_add(model1, 0xFFFFFF, 5, 1, 6);
-    // model_net_add(model1, 0xFFFFFF, 6, 1, 7);
-    // model_label_add(model1, 0xFF0000, 10.0, 20.0, 30.0, "A"); //注释
-    // model_label_add(model1, 0x00FF00, 10.0, -20.0, 30.0, "B");
-    // model_label_add(model1, 0x0000FF, 10.0, -20.0, -30.0, "C");
-    // model_label_add(model1, 0xFFFF00, 10.0, 20.0, -30.0, "D");
-    // model_label_add(model1, 0x00FFFF, -10.0, 20.0, -30.0, "E");
-    // model_label_add(model1, 0xFF00FF, -10.0, 20.0, 30.0, "F");
-    // model_label_add(model1, 0xFF8000, -10.0, -20.0, 30.0, "G");
-    // model_label_add(model1, 0x00FF80, -10.0, -20.0, -30.0, "H");
+    //模型1初始化: 长方体
+    model1 = model_plane_add3(NULL, 0xFF0000, 10, 20, 30, -10, 20, 30, -10, -20, 30);
+    model1 = model_plane_add3(model1, 0xFF0000, 10, 20, 30, -10, -20, 30, 10, -20, 30);
+    model1 = model_plane_add3(model1, 0x00FF00, 10, 20, 30, -10, 20, 30, -10, 20, -30);
+    model1 = model_plane_add3(model1, 0x00FF00, 10, 20, 30, -10, 20, -30, 10, 20, -30);
+    model1 = model_plane_add3(model1, 0x0000FF, 10, 20, 30, 10, -20, 30, 10, -20, -30);
+    model1 = model_plane_add3(model1, 0x0000FF, 10, 20, 30, 10, -20, -30, 10, 20, -30);
+    model1 = model_plane_add3(model1, 0xFFFF00, -10, -20, 30, 10, -20, 30, 10, -20, -30);
+    model1 = model_plane_add3(model1, 0xFFFF00, -10, -20, 30, 10, -20, -30, -10, -20, -30);
+    model1 = model_plane_add3(model1, 0x00FFFF, -10, -20, 30, -10, 20, 30, -10, 20, -30);
+    model1 = model_plane_add3(model1, 0x00FFFF, -10, -20, 30, -10, 20, -30, -10, -20, -30);
+    model1 = model_plane_add3(model1, 0xFF00FF, -10, -20, -30, 10, -20, -30, 10, 20, -30);
+    model1 = model_plane_add3(model1, 0xFF00FF, -10, -20, -30, 10, 20, -30, -10, 20, -30);
 
-    // //模型2初始化: 三棱柱 (注意!! 变长参数中的float类型一定要0.0格式)
-    // model2 = model_init(6,
-    //     20.0, 0.0, 20.0, 0xFF0000,
-    //     -10.0, 17.3, 20.0, 0x00FF00,
-    //     -10.0, -17.3, 20.0, 0x0000FF,
-    //     -10.0, -17.3, -20.0, 0xFFFF00,
-    //     20.0, 0.0, -20.0, 0x00FFFF,
-    //     -10.0, 17.3, -20.0, 0xFF00FF);
-    // model_net_add(model2, 0xFFFFFF, 0, 3, 1, 2, 4); //连线关系
-    // model_net_add(model2, 0xFFFFFF, 1, 2, 2, 5);
-    // model_net_add(model2, 0xFFFFFF, 2, 1, 3);
-    // model_net_add(model2, 0xFFFFFF, 3, 2, 4, 5);
-    // model_net_add(model2, 0xFFFFFF, 4, 1, 5);
-    // model_label_add(model2, 0xFF0000, 20.0, 0.0, 20.0, "A"); //注释
-    // model_label_add(model2, 0x00FF00, -10.0, 17.3, 20.0, "B");
-    // model_label_add(model2, 0x0000FF, -10.0, -17.3, 20.0, "C");
-    // model_label_add(model2, 0xFFFF00, -10.0, -17.3, -20.0, "D");
-    // model_label_add(model2, 0x00FFFF, 20.0, 0.0, -20.0, "E");
-    // model_label_add(model2, 0xFF00FF, -10.0, 17.3, -20.0, "F");
+    //模型2初始化: 三棱柱
+    model2 = model_plane_add3(NULL, 0xFFFF00, 20, 0, 20, -10, 17.3, 20, -10, -17.3, 20);
+    model2 = model_plane_add3(model2, 0x00FFFF, 20, 0, -20, -10, 17.3, -20, -10, -17.3, -20);
+    model2 = model_plane_add3(model2, 0xFF0000, 20, 0, 20, -10, 17.3, 20, -10, 17.3, -20);
+    model2 = model_plane_add3(model2, 0xFF0000, 20, 0, 20, -10, 17.3, -20, 20, 0, -20);
+    model2 = model_plane_add3(model2, 0x00FF00, 20, 0, 20, -10, -17.3, 20, -10, -17.3, -20);
+    model2 = model_plane_add3(model2, 0x00FF00, 20, 0, 20, -10, -17.3, -20, 20, 0, -20);
+    model2 = model_plane_add3(model2, 0x0000FF, -10, 17.3, 20, -10, -17.3, 20, -10, -17.3, -20);
+    model2 = model_plane_add3(model2, 0x0000FF, -10, 17.3, 20, -10, -17.3, -20, -10, 17.3, -20);
 
     //引擎初始化: 建立 250 x 250 x 250 三维空间
     engine = engine_init(ENGINE_INTERVAL_MS, 250, 250, 250);
@@ -284,7 +256,7 @@ void all_init(void)
     sport2 = engine_model_add(engine, model2, model2_xyz, model2_roll_xyz);
 }
 
-#elif 0 //随机平面三角形填充测试
+#elif 1 //随机平面三角形填充测试
 
 #include <stdlib.h>
 #include <string.h>
@@ -297,33 +269,36 @@ void all_init(void)
 int main(void)
 {
     uint8_t map[S_SIZE * S_SIZE * 3] = {0};
-    float xy[6];
-    int ret, *retXy;
+    float xy[6], *retXy;
+    int ret;
     int i, offset;
 
     srand(getTickUs());
 
     while(1)
     {
+        //清屏
         memset(map, 0x10, sizeof(map));
-
+        //随机三角形
         xy[0] = rand() % S_SIZE;
         xy[1] = rand() % S_SIZE;
         xy[2] = rand() % S_SIZE;
         xy[3] = rand() % S_SIZE;
         xy[4] = rand() % S_SIZE;
         xy[5] = rand() % S_SIZE;
-
-        ret = triangle_enum(xy, &retXy);
+        //遍历三角形,得到平面坐标数组
+        // ret = triangle_enum(xy, &retXy);
+        ret = triangle_enum2((char *)map, S_SIZE, S_SIZE, xy, &retXy);
+        //画三角形
         for (i = 0; i < ret; i++)
         {
-            offset = (retXy[i * 2 + 1] * S_SIZE + retXy[i * 2]) * 3;
+            offset = ((int)retXy[i * 2 + 1] * S_SIZE + (int)retXy[i * 2]) * 3;
             map[offset] = 0xFF;
             map[offset + 1] = 0x10;
             map[offset + 2] = 0x10;
         }
         free(retXy);
-
+        //刷新
         fb_output(map, 0, 0, S_SIZE, S_SIZE);
 
         // usleep(100000);
@@ -347,16 +322,17 @@ int main(void)
 int main(void)
 {
     uint8_t map[S_SIZE * S_SIZE * 3] = {0};
-    float xyz[9];
-    int ret, *retXyz;
+    float xyz[9], *retXyz;
+    int ret;
     int i, offset;
 
     srand(getTickUs());
 
     while(1)
     {
+        //清屏
         memset(map, 0x10, sizeof(map));
-
+        //随机三角形
         xyz[0] = rand() % SH_SIZE;
         xyz[1] = rand() % SH_SIZE;
         xyz[2] = rand() % SH_SIZE;
@@ -366,28 +342,29 @@ int main(void)
         xyz[6] = rand() % SH_SIZE;
         xyz[7] = rand() % SH_SIZE;
         xyz[8] = rand() % SH_SIZE;
-
+        //遍历三角形,得到空间坐标数组
         ret = triangle_enum3D(xyz, &retXyz);
+        //画三视图
         for (i = 0; i < ret; i++)
         {
             //正视图YZ平面
-            offset = (retXyz[i * 3 + 2] * S_SIZE + retXyz[i * 3 + 1]) * 3;
+            offset = ((int)retXyz[i * 3 + 2] * S_SIZE + (int)retXyz[i * 3 + 1]) * 3;
             map[offset] = 0xFF;
             map[offset + 1] = 0x10;
             map[offset + 2] = 0x10;
             //右视图XZ平面
-            offset = (retXyz[i * 3 + 2] * S_SIZE + retXyz[i * 3 + 0] + SH_SIZE) * 3;
+            offset = ((int)retXyz[i * 3 + 2] * S_SIZE + (int)retXyz[i * 3 + 0] + SH_SIZE) * 3;
             map[offset] = 0xFF;
             map[offset + 1] = 0x10;
             map[offset + 2] = 0x10;
             //俯视图XY平面
-            offset = ((retXyz[i * 3 + 0] + SH_SIZE) * S_SIZE + retXyz[i * 3 + 1]) * 3;
+            offset = (((int)retXyz[i * 3 + 0] + SH_SIZE) * S_SIZE + (int)retXyz[i * 3 + 1]) * 3;
             map[offset] = 0xFF;
             map[offset + 1] = 0x10;
             map[offset + 2] = 0x10;
         }
         free(retXyz);
-
+        //刷新屏幕
         fb_output(map, 0, 0, S_SIZE, S_SIZE);
 
         // usleep(100000);

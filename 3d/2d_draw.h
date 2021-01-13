@@ -15,12 +15,12 @@ void _2d_draw_dot(
     uint8_t *rgbMap,
     uint32_t width, uint32_t height,
     int32_t *xy,
-    uint32_t rgbColor, uint32_t size);
+    uint32_t argbColor, uint32_t size);
 
 void _2d_draw_line(
     uint8_t *rgbMap,
     uint32_t width, uint32_t height,
     int32_t *xyStart, int32_t *xyEnd,
-    uint32_t rgbColor, uint32_t size);
+    uint32_t argbColor, uint32_t size);
 
 #endif
