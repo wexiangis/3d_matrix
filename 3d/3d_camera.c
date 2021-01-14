@@ -50,7 +50,7 @@ _3D_Camera *camera_init(
     camera->openAngle = openAngle;
     camera->near = near;
     camera->far = far;
-    camera->quat[0] = 1;
+    camera->position.quat[0] = 1;
 
     camera->pixelOfScreen = ((float)height / 2) / tan(openAngle * M_PI / 180 / 2) / near;
 
@@ -61,9 +61,9 @@ _3D_Camera *camera_init(
 
     //初始状态
     if (xyz)
-        memcpy(camera->xyz, xyz, sizeof(float) * 3);
+        memcpy(camera->position.xyz, xyz, sizeof(float) * 3);
     if (roll_xyz)
-        pry_to_quat2(roll_xyz, camera->quat);
+        pry_to_quat2(roll_xyz, camera->position.quat);
 
     //备份
     camera->backup = (_3D_Camera *)calloc(1, sizeof(_3D_Camera));
@@ -139,7 +139,7 @@ void camera_roll(_3D_Camera *camera, float x, float y, float z)
 {
     float rxyz[] = {x, y, z};
     //
-    quat_roll(camera->quat, NULL, 0, rxyz, true);
+    quat_roll(camera->position.quat, NULL, 0, rxyz, true);
     //
     camera_roll2(camera, rxyz[1], rxyz[2], rxyz[0]);
 }
@@ -148,15 +148,15 @@ void camera_roll(_3D_Camera *camera, float x, float y, float z)
 void camera_roll2(_3D_Camera *camera, float rUpDown, float rLeftRight, float rClock)
 {
     float roll_xyz[] = {rClock, rUpDown, rLeftRight};
-    quat_diff2(camera->quat, roll_xyz);
+    quat_diff2(camera->position.quat, roll_xyz);
 }
 
 // 相机3轴平移, 增量式, 基于空间坐标系
 void camera_mov(_3D_Camera *camera, float x, float y, float z)
 {
-    camera->xyz[0] += x;
-    camera->xyz[1] += y;
-    camera->xyz[2] += z;
+    camera->position.xyz[0] += x;
+    camera->position.xyz[1] += y;
+    camera->position.xyz[2] += z;
 }
 
 // 相机3轴平移, 增量式, 基于自身坐标系
@@ -165,7 +165,7 @@ void camera_mov2(_3D_Camera *camera, float upDown, float leftRight, float frontB
     //组成增量向量
     float mXYZ[] = {frontBack, leftRight, upDown};
     //
-    quat_roll(camera->quat, NULL, 0, mXYZ, false);
+    quat_roll(camera->position.quat, NULL, 0, mXYZ, false);
     //再平移
     camera_mov(camera, mXYZ[0], mXYZ[1], mXYZ[2]);
 }

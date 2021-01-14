@@ -12,6 +12,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef struct _3DCameraPosition
+{
+    float xyz[3];      //相机原点当前所在坐标
+    float quat[4];     //用四元数法记录相机转角
+}_3D_CameraPosition;
+
 typedef struct _3DCamera
 {
     /*
@@ -29,14 +35,12 @@ typedef struct _3DCamera
 
     float pixelOfScreen; //屏幕前显示的空间点被放大倍数, 等式 h/2 = tan(a/2)*near 左边除以右边
 
-    float xyz[3];      //相机原点当前所在坐标
-    float quat[4];     //用四元数法记录相机转角
-
-    float lock_xyz[3]; //锁定目标点(就是让相机的旋转以此为原点)
-
     uint32_t photoSize; //照片字节长度 width*height*3
     uint8_t *photoMap;  //照片缓冲区,RGB存储格式,字节长度 width*height*3
     uint32_t *photoDepth; //照片(二维点阵)中的每个点的深度信息,当绘制点处于遮挡状态时可以不绘制,字节长度 width*height*sizeof(float)
+
+    float lock_xyz[3]; //锁定目标点(就是让相机的旋转以此为原点)
+    _3D_CameraPosition position; //相机位置
 
     struct _3DCamera *backup; //对初始化时的参数进行备份(注意其中的 photoMap 不要重复释放)
 

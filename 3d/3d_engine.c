@@ -73,6 +73,7 @@ static void engine_thread(void *argv)
 {
     _3D_Engine *engine = (_3D_Engine *)argv;
     _3D_Unit *unit;
+    _3D_Sport sport;
     ENGINE_DELAY_INIT;
     while (!engine->threadExit)
     {
@@ -86,7 +87,9 @@ static void engine_thread(void *argv)
         while (unit)
         {
             //更新运动状态
-            engine_sport(engine, unit->sport);
+            memcpy(&sport, unit->sport, sizeof(sport));
+            engine_sport(engine, &sport);
+            memcpy(unit->sport, &sport, sizeof(sport));
             //下一个
             unit = unit->next;
         }
@@ -243,25 +246,25 @@ static void engine_position(_3D_Sport *sport, float *xyz, float *retXyz, uint32_
  *      retXyz[3 * pointTotal]: 坐标点数组
  *      pointTotal: 数组中坐标点的个数
  */
-static void engine_position_of_camera(_3D_Camera *camera, float *xyz, float *retXyz, uint32_t pointTotal)
+static void engine_position_of_camera(_3D_CameraPosition *position, float *xyz, float *retXyz, uint32_t pointTotal)
 {
     uint32_t xyzCount;
     //先把相机的平移转嫁为坐标点相对相机的平移(即让坐标点以相机位置作为原点)
     for (xyzCount = 0; xyzCount < pointTotal * 3;)
     {
         //注意这里要反方向平移
-        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[0];
+        retXyz[xyzCount] = xyz[xyzCount] - position->xyz[0];
         xyzCount += 1;
-        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[1];
+        retXyz[xyzCount] = xyz[xyzCount] - position->xyz[1];
         xyzCount += 1;
-        retXyz[xyzCount] = xyz[xyzCount] - camera->xyz[2];
+        retXyz[xyzCount] = xyz[xyzCount] - position->xyz[2];
         xyzCount += 1;
     }
     //再把相机自身的旋转转嫁为坐标点相对相机的旋转
     for (xyzCount = 0; xyzCount < pointTotal * 3; xyzCount += 3)
     {
         //用姿态四元数直接旋转向量
-        quat_roll(camera->quat, NULL, 0, &retXyz[xyzCount], true);
+        quat_roll(position->quat, NULL, 0, &retXyz[xyzCount], true);
     }
 }
 
@@ -299,7 +302,7 @@ static void engine_project_into_camera(
         _xy[0] = _xy[0] / (2 * camera->ar) * camera->width;
         _xy[1] = _xy[1] / 2 * camera->height;
         //把坐标原点移动到屏幕中心
-        xy[cXy++] = (uint32_t)(_xy[0] + camera->width / 2);
+        xy[cXy++] = (uint32_t)(camera->width / 2 - _xy[0]);
         xy[cXy++] = (uint32_t)(camera->height / 2 - _xy[1]);
     }
 }
@@ -322,19 +325,27 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
     _3D_Line *line;
     _3D_Plane *plane;
     _3D_Label *label;
+    _3D_Sport sport;
+    _3D_CameraPosition position;
+
+    //定格相机位置(否则可能图像撕裂)
+    memcpy(&position, &camera->position, sizeof(position));
 
     //遍历单元链表
     unit = engine->unit;
     while (unit)
     {
+        //定格运动状态(否则可能图像撕裂)
+        memcpy(&sport, unit->sport, sizeof(sport));
+
         //遍历plane链表
         line = unit->model->line;
         while (line)
         {
             //根据运动状态更新位置
-            engine_position(unit->sport, line->xyz, xyz, 2);
+            engine_position(&sport, line->xyz, xyz, 2);
             //坐标点相对于相机的位置变化
-            engine_position_of_camera(camera, xyz, xyz, 2);
+            engine_position_of_camera(&position, xyz, xyz, 2);
 
             //有任意一点入屏
             if (camera_isInside(camera, &xyz[0]) ||
@@ -357,9 +368,9 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
         while (plane)
         {
             //根据运动状态更新位置
-            engine_position(unit->sport, plane->xyz, xyz, 3);
+            engine_position(&sport, plane->xyz, xyz, 3);
             //坐标点相对于相机的位置变化
-            engine_position_of_camera(camera, xyz, xyz, 3);
+            engine_position_of_camera(&position, xyz, xyz, 3);
 
             //有任意一点入屏
             // if (camera_isInside(camera, &xyz[0]) ||
@@ -398,9 +409,9 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
         while (label)
         {
             //根据运动状态更新位置
-            engine_position(unit->sport, label->xyz, xyz, 1);
+            engine_position(&sport, label->xyz, xyz, 1);
             //坐标点相对于相机的位置变化
-            engine_position_of_camera(camera, xyz, xyz, 1);
+            engine_position_of_camera(&position, xyz, xyz, 1);
 
             //目标点入屏
             if (camera_isInside(camera, xyz))

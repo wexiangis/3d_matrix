@@ -17,20 +17,28 @@
 #else
 #define INTERVAL_MS 50
 #endif
+
 //引擎计算间隔ms
 #define ENGINE_INTERVAL_MS 50
+
 //平移和旋转最小分度格
-#define DIV_MOV  2 //单位:点
-#define DIV_ROLL 2 //单位:度
+#define DIV_MOV  1 //单位:点
+#define DIV_ROLL 1 //单位:度
 
 //3个相机(三视图)
-static _3D_Camera *camera1, *camera2, *camera3;
+static _3D_Camera *camera1 = NULL;
+static _3D_Camera *camera2 = NULL;
+static _3D_Camera *camera3 = NULL;
 //3个模型
-static _3D_Model *model0, *model1, *model2;
+static _3D_Model *model0 = NULL;
+static _3D_Model *model1 = NULL;
+static _3D_Model *model2 = NULL;
 //3个运动控制器(往引擎添加模型后返回的运动控制指针)
-static _3D_Sport *sport0, *sport1, *sport2;
+static _3D_Sport *sport0 = NULL;
+static _3D_Sport *sport1 = NULL;
+static _3D_Sport *sport2 = NULL;
 //引擎
-static _3D_Engine *engine;
+static _3D_Engine *engine = NULL;
 
 //把大陀的初始化代码放到main函数后面,方便快速查看
 void all_init(void);
@@ -60,10 +68,10 @@ void key_callback(void *obj, int key, int type)
             mFrontBack = -DIV_MOV;
         //'a'键, 左移
         else if (key == 30)
-            mLeftRight = -DIV_MOV;
+            mLeftRight = DIV_MOV;
         //'d'键, 右移
         else if (key == 32)
-            mLeftRight = DIV_MOV;
+            mLeftRight = -DIV_MOV;
         //'q'键, 上移
         else if (key == 16)
             mUpDown = DIV_MOV;
@@ -79,10 +87,10 @@ void key_callback(void *obj, int key, int type)
             rUpDown = DIV_ROLL;
         //'左'键, 左翻
         else if (key == 105)
-            rLeftRight = -DIV_ROLL;
+            rLeftRight = DIV_ROLL;
         //'右'键, 右翻
         else if (key == 106)
-            rLeftRight = DIV_ROLL;
+            rLeftRight = -DIV_ROLL;
         //'左Shift'键, 旋转
         else if (key == 42)
             rClock = DIV_ROLL;
@@ -207,6 +215,7 @@ void all_init(void)
     float camera1_roll_xyz[3] = {0, 0, 180};//x轴正方向走动100后来个180度掉头
     float camera2_roll_xyz[3] = {0, 0, -90};//y轴正方向走动100后
     float camera3_roll_xyz[3] = {0, 90, 180};
+
     //模型初始位置和转角
     float model1_xyz[3] = {-15, -30, 0};
     float model2_xyz[3] = {15, 30, 0};
@@ -219,12 +228,12 @@ void all_init(void)
     camera3 = camera_init(300, 300, 90, 5, 1000, camera3_xyz, camera3_roll_xyz);
 
     //模型0初始化: 空间xyz坐标轴
-    model0 = model_line_add3(NULL, 0x800000, 50, 0, 0, -50, 0, 0); //红色X轴
+    model0 = model_line_add3(model0, 0x800000, 50, 0, 0, -50, 0, 0); //红色X轴
     model0 = model_line_add3(model0, 0x008000, 0, 50, 0, 0, -50, 0); //绿色Y轴
     model0 = model_line_add3(model0, 0x000080, 0, 0, 50, 0, 0, -50); //蓝色Z轴
 
     //模型1初始化: 长方体
-    model1 = model_plane_add3(NULL, 0xFF0000, 10, 20, 30, -10, 20, 30, -10, -20, 30);
+    model1 = model_plane_add3(model1, 0xFF0000, 10, 20, 30, -10, 20, 30, -10, -20, 30);
     model1 = model_plane_add3(model1, 0xFF0000, 10, 20, 30, -10, -20, 30, 10, -20, 30);
     model1 = model_plane_add3(model1, 0x00FF00, 10, 20, 30, -10, 20, 30, -10, 20, -30);
     model1 = model_plane_add3(model1, 0x00FF00, 10, 20, 30, -10, 20, -30, 10, 20, -30);
@@ -238,7 +247,7 @@ void all_init(void)
     model1 = model_plane_add3(model1, 0xFF00FF, -10, -20, -30, 10, 20, -30, -10, 20, -30);
 
     //模型2初始化: 三棱柱
-    model2 = model_plane_add3(NULL, 0xFFFF00, 20, 0, 20, -10, 17.3, 20, -10, -17.3, 20);
+    model2 = model_plane_add3(model2, 0xFFFF00, 20, 0, 20, -10, 17.3, 20, -10, -17.3, 20);
     model2 = model_plane_add3(model2, 0x00FFFF, 20, 0, -20, -10, 17.3, -20, -10, -17.3, -20);
     model2 = model_plane_add3(model2, 0xFF0000, 20, 0, 20, -10, 17.3, 20, -10, 17.3, -20);
     model2 = model_plane_add3(model2, 0xFF0000, 20, 0, 20, -10, 17.3, -20, 20, 0, -20);
