@@ -732,7 +732,7 @@ bool projection(
     */
 
     //这里把XYZ轴顺序调换为YZX了
-    retX = xyz[1] / ar / tan(openAngle / 2) / xyz[0];
+    retX = -xyz[1] / ar / tan(openAngle / 2) / xyz[0];
     retY = xyz[2] / tan(openAngle / 2) / xyz[0];
     retZ = ((-nearZ) - farZ) / (nearZ - farZ) + 2 * farZ * nearZ / (nearZ - farZ) / xyz[0];
 
@@ -800,10 +800,10 @@ float triangle_max_line3D(float xy[9])
 /*
  *  遍历平面三角形里面的每一个点
  *  参数:
- *      xy: 3个二维坐标
+ *      xy[6]: 3个二维坐标
  *      retXy: 返回二维坐标数组指针 !! 用完记得释放 !!
  *
- *  返回: retXy数组里的坐标个数(理论上是三角形最长边的点的个数)
+ *  返回: retXy数组里的坐标个数
  *  参考: https://blog.csdn.net/weixin_34304013/article/details/89063136
  */
 int triangle_enum(float xy[6], float **retXy)
@@ -842,98 +842,7 @@ int triangle_enum(float xy[6], float **retXy)
     return c / 2;
 }
 
-#include <stdlib.h>
-#include <unistd.h>
-#include "fbmap.h"
-int triangle_enum2(char *map, int w, int h, float xy[6], float **retXy)
-{
-    int cMax, c = 0;
-    float div;
-    float i, j, k;
-    float x, y;
-    int offset;
-    float maxLine = triangle_max_line(xy);
-
-    //返回点个数估算
-    cMax = (int)(maxLine) + 1;
-
-    //1+2+3+4+5...+100=? 等差数列求和问题
-    cMax = cMax * (cMax + 1) / 2;
-
-    //数组内存分配
-    cMax *= 2;
-    *retXy = (float *)calloc(cMax, sizeof(float));
-
-    //分度格
-    div = 1 / maxLine;
-
-    //三角形ABC内一点P
-    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
-    //即遍历所有的i,j,k数值即可获得所有P点
-    for (i = 0; i < 1; i += div)
-    {
-        for (j = 0; j < 1 - i && c < cMax; j += div)
-        {
-            k = 1 - i - j;
-            (*retXy)[c++] = x = i * xy[0] + j * xy[2] + k * xy[4];
-            (*retXy)[c++] = y = i * xy[1] + j * xy[3] + k * xy[5];
-            
-            offset = ((int)y * w + (int)x) * 3;
-            map[offset++] = 0xFF;
-            map[offset++] = 0x00;
-            map[offset++] = 0x00;
-        }
-        fb_output((uint8_t *)map, 0, 0, w, h);
-        usleep(1000);
-    }
-
-    return c / 2;
-}
-
-/*
- *  遍历空间平面三角形里面的每一个点
- *  参数:
- *      xyz: 3个三维坐标
- *      retXyz: 返回三维坐标数组指针 !! 用完记得释放 !!
- *
- *  返回: retXyz数组里的坐标个数(理论上是三视图投影中点数最多的那个)
- */
-int triangle_enum3D(float xyz[9], float **retXyz)
-{
-    int cMax, c = 0;
-    float div;
-    float i, j, k;
-    float maxLine = triangle_max_line3D(xyz);
-
-    //返回点个数估算
-    cMax = (int)(maxLine) + 1;
-
-    //1+2+3+4+5...+100=? 等差数列求和问题
-    cMax = cMax * (cMax + 1) / 2;
-
-    //数组内存分配
-    cMax *= 3;
-    *retXyz = (float *)calloc(cMax, sizeof(float));
-
-    //分度格
-    div = 1 / maxLine;
-
-    //三角形ABC内一点P
-    //有 P = i*A + j*B + k*C, 且 i + j + k = 1
-    //即遍历所有的i,j,k数值即可获得所有P点
-    for (i = 0; i < 1; i += div)
-    {
-        for (j = 0; j < 1 - i && c < cMax; j += div)
-        {
-            k = 1 - i - j;
-            (*retXyz)[c++] = i * xyz[0] + j * xyz[3] + k * xyz[6];
-            (*retXyz)[c++] = i * xyz[1] + j * xyz[4] + k * xyz[7];
-            (*retXyz)[c++] = i * xyz[2] + j * xyz[5] + k * xyz[8];
-        }
-    }
-
-    return c / 3;
-}
+//三维+密度调整参数pow: 0或者1时使用默认倍数
 int triangle_enum3Dp(float xyz[9], float **retXyz, float pow)
 {
     int cMax, c = 0;
@@ -941,7 +850,7 @@ int triangle_enum3Dp(float xyz[9], float **retXyz, float pow)
     float i, j, k;
     float maxLine = triangle_max_line3D(xyz);
 
-    //密度不够,可以多乘以X被
+    //通过乘以X倍,以降低、提高密度
     if (pow > 0)
         maxLine *= pow;
 
@@ -973,4 +882,121 @@ int triangle_enum3Dp(float xyz[9], float **retXyz, float pow)
     }
 
     return c / 3;
+}
+
+//三维版本
+int triangle_enum3D(float xyz[9], float **retXyz)
+{
+    return triangle_enum3Dp(xyz, retXyz, 0);
+}
+
+static float _fabs(float f)
+{
+    return f < 0 ? (-f) : f;
+}
+
+/*
+ *  遍历平面直线所有的点
+ *  参数:
+ *      xy[4]: 2个二维坐标
+ *      retXy: 返回二维坐标数组指针 !! 用完记得释放 !!
+ *
+ *  返回: retXy数组里的坐标个数
+ */
+int line_enum(float xy[4], float **retXy)
+{
+    float xErr, yErr;
+    float xDiv, yDiv;
+    float x, y;
+    float maxLine;
+    int cMax, c = 0;
+
+    //xy偏差
+    xErr = _fabs(xy[2] - xy[0]);
+    yErr = _fabs(xy[3] - xy[1]);
+
+    //最长边选取
+    if (xErr > yErr)
+        maxLine = xErr;
+    else
+        maxLine = yErr;
+
+    cMax = (int)maxLine + 1;
+
+    //内存准备
+    cMax *= 2;
+    *retXy = (float *)calloc(cMax, sizeof(float));
+
+    //每次偏移量(水平、垂直时为0)
+    xDiv = xErr == 0 ? 0 : ((xy[2] - xy[0]) / maxLine); //注意这里必须用[2]减[0]
+    yDiv = yErr == 0 ? 0 : ((xy[3] - xy[1]) / maxLine); //同上
+
+    for (x = xy[0], y = xy[1]; c < cMax; x += xDiv, y += yDiv)
+    {
+        (*retXy)[c++] = x;
+        (*retXy)[c++] = y;
+    }
+
+    return c / 2;
+}
+
+//三维+密度调整参数pow: 0或者1时使用默认倍数
+int line_enum3Dp(float xyz[6], float **retXyz, float pow)
+{
+    float xErr, yErr, zErr;
+    float xDiv, yDiv, zDiv;
+    float x, y, z;
+    float maxLine;
+    int cMax, c = 0;
+
+    //xy偏差
+    xErr = _fabs(xyz[3] - xyz[0]);
+    yErr = _fabs(xyz[4] - xyz[1]);
+    zErr = _fabs(xyz[5] - xyz[2]);
+
+    //最长边选取
+    if (xErr > yErr)
+    {
+        if (xErr > zErr)
+            maxLine = xErr;
+        else
+            maxLine = zErr;
+    }
+    else
+    {
+        if (yErr > zErr)
+            maxLine = yErr;
+        else
+            maxLine = zErr;
+    }
+
+    //通过乘以X倍,以降低、提高密度
+    if (pow > 0)
+        maxLine *= pow;
+
+    cMax = (int)maxLine + 1;
+
+    //内存准备
+    cMax *= 3;
+    *retXyz = (float *)calloc(cMax, sizeof(float));
+
+    //每次偏移量(水平、垂直时为0)
+    xDiv = xErr == 0 ? 0 : ((xyz[3] - xyz[0]) / maxLine); //注意这里必须用[3]减[0]
+    yDiv = yErr == 0 ? 0 : ((xyz[4] - xyz[1]) / maxLine); //同上
+    zDiv = zErr == 0 ? 0 : ((xyz[5] - xyz[2]) / maxLine); //同上
+
+    for (x = xyz[0], y = xyz[1], z = xyz[2]; c < cMax; x += xDiv, y += yDiv, z += zDiv)
+    {
+        (*retXyz)[c++] = x;
+        (*retXyz)[c++] = y;
+        (*retXyz)[c++] = z;
+    }
+
+    return c / 3;
+}
+
+//三维版本
+int line_enum3D(float xyz[6], float **retXyz)
+{
+    return line_enum3Dp(xyz, retXyz, 0);
 }

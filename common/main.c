@@ -212,9 +212,9 @@ void all_init(void)
     float camera1_xyz[3] = {100, 0, 0};
     float camera2_xyz[3] = {0, 100, 0};
     float camera3_xyz[3] = {0, 0, 100};
-    float camera1_roll_xyz[3] = {0, 0, 180};//x轴正方向走动100后来个180度掉头
-    float camera2_roll_xyz[3] = {0, 0, -90};//y轴正方向走动100后
-    float camera3_roll_xyz[3] = {0, 90, 180};
+    float camera1_roll_xyz[3] = {0, 0, 180};//x轴正方向走动100后绕z轴180度旋转
+    float camera2_roll_xyz[3] = {0, 0, -90};//y轴正方向走动100后绕z轴-90度旋转
+    float camera3_roll_xyz[3] = {0, 90, 180};//z轴正方向走动100后先绕z轴180度旋转再绕y轴90度旋转
 
     //模型初始位置和转角
     float model1_xyz[3] = {-15, -30, 0};
@@ -296,8 +296,7 @@ int main(void)
         xy[4] = rand() % S_SIZE;
         xy[5] = rand() % S_SIZE;
         //遍历三角形,得到平面坐标数组
-        // ret = triangle_enum(xy, &retXy);
-        ret = triangle_enum2((char *)map, S_SIZE, S_SIZE, xy, &retXy);
+        ret = triangle_enum(xy, &retXy);
         //画三角形
         for (i = 0; i < ret; i++)
         {

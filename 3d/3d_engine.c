@@ -302,7 +302,7 @@ static void engine_project_into_camera(
         _xy[0] = _xy[0] / (2 * camera->ar) * camera->width;
         _xy[1] = _xy[1] / 2 * camera->height;
         //把坐标原点移动到屏幕中心
-        xy[cXy++] = (uint32_t)(camera->width / 2 - _xy[0]);
+        xy[cXy++] = (uint32_t)(camera->width / 2 + _xy[0]);
         xy[cXy++] = (uint32_t)(camera->height / 2 - _xy[1]);
     }
 }
@@ -348,15 +348,30 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
             engine_position_of_camera(&position, xyz, xyz, 2);
 
             //有任意一点入屏
-            if (camera_isInside(camera, &xyz[0]) ||
-                camera_isInside(camera, &xyz[3]))
+            // if (camera_isInside(camera, &xyz[0]) ||
+            //     camera_isInside(camera, &xyz[3]))
             {
                 //遍历空间直线上的所有点
-                ret = 0;
+                ret = line_enum3Dp(xyz, &retXyz, camera->pixelOfScreen / 20);
                 for (c = 0; c < ret * 3; c += 3)
                 {
-                    ;
+                    //获取该点在相机平面中的"二维坐标"和"深度信息"
+                    engine_project_into_camera(camera, &retXyz[c], 1, xy, &depth, &inside);
+                    //再次检查入屏 && 没有被遮挡
+                    offset = xy[1] * camera->width + xy[0];
+                    if (inside && depth < camera->photoDepth[offset])
+                    {
+                        //占用该点
+                        camera->photoDepth[offset] = depth;
+                        //画点
+                        offset *= 3;//像素偏移
+                        camera->photoMap[offset++] = (uint8_t)((line->argbColor >> 16) & 0xFF);
+                        camera->photoMap[offset++] = (uint8_t)((line->argbColor >> 8) & 0xFF);
+                        camera->photoMap[offset++] = (uint8_t)(line->argbColor & 0xFF);
+                    }
                 }
+                //内存回收
+                free(retXyz);
             }
 
             //下一个
@@ -378,7 +393,7 @@ void engine_photo(_3D_Engine *engine, _3D_Camera *camera)
             //     camera_isInside(camera, &xyz[6]))
             {
                 //遍历空间三角平面上的所有点
-                ret = triangle_enum3Dp(xyz, &retXyz, camera->pixelOfScreen / 10);
+                ret = triangle_enum3Dp(xyz, &retXyz, camera->pixelOfScreen / 20);
                 for (c = 0; c < ret * 3; c += 3)
                 {
                     //获取该点在相机平面中的"二维坐标"和"深度信息"

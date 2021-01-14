@@ -112,27 +112,30 @@ bool projection(
 
 //获取平面三角形最长边
 float triangle_max_line(float xy[6]);
+float triangle_max_line3D(float xy[9]);
 
 /*
  *  遍历平面三角形里面的每一个点
  *  参数:
- *      xy: 3个二维坐标
+ *      xy[6]: 3个二维坐标
  *      retXy: 返回二维坐标数组指针 !! 用完记得释放 !!
  *
- *  返回: retXy数组里的坐标个数(理论上是三角形最长边的点的个数)
+ *  返回: retXy数组里的坐标个数
  */
 int triangle_enum(float xy[6], float **retXy);
-int triangle_enum2(char *map, int w, int h, float xy[6], float **retXy); //测试用
+int triangle_enum3D(float xyz[9], float **retXyz); //三维版本
+int triangle_enum3Dp(float xyz[9], float **retXyz, float pow); //三维+密度调整参数pow: 0或者1时使用默认倍数
 
 /*
- *  遍历空间平面三角形里面的每一个点
+ *  遍历平面直线所有的点
  *  参数:
- *      xyz: 3个三维坐标
- *      retXyz: 返回三维坐标数组指针 !! 用完记得释放 !!
+ *      xy[4]: 2个二维坐标
+ *      retXy: 返回二维坐标数组指针 !! 用完记得释放 !!
  *
- *  返回: retXyz数组里的坐标个数(理论上是三视图投影中点数最多的那个)
+ *  返回: retXy数组里的坐标个数
  */
-int triangle_enum3D(float xyz[9], float **retXyz);
-int triangle_enum3Dp(float xyz[9], float **retXyz, float pow); //pow: 0或者1时使用默认倍数
+int line_enum(float xy[4], float **retXy);
+int line_enum3D(float xyz[6], float **retXyz); //三维版本
+int line_enum3Dp(float xyz[6], float **retXyz, float pow); //三维+密度调整参数pow: 0或者1时使用默认倍数
 
 #endif
