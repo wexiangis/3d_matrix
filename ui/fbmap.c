@@ -65,15 +65,15 @@ int fb_init(void)
         return -1;
     }
     printf("frameBuffer: %s, %d x %d, %dbytes / %dbpp\r\n",
-           FB_PATH, fbmap->fbInfo.xres, fbmap->fbInfo.yres, fbmap->fbInfo.bits_per_pixel / 8, fbmap->fbInfo.bits_per_pixel);
+           FB_PATH, fbmap->fbInfo.xres_virtual, fbmap->fbInfo.yres_virtual, fbmap->fbInfo.bits_per_pixel / 8, fbmap->fbInfo.bits_per_pixel);
 
     fbmap->bpp = fbmap->fbInfo.bits_per_pixel / 8;
-    fbmap->bw = fbmap->bpp * fbmap->fbInfo.xres;
-    fbmap->bh = fbmap->bpp * fbmap->fbInfo.yres;
-    fbmap->fbSize = fbmap->fbInfo.xres * fbmap->fbInfo.yres * fbmap->bpp;
+    fbmap->bw = fbmap->bpp * fbmap->fbInfo.xres_virtual;
+    fbmap->bh = fbmap->bpp * fbmap->fbInfo.yres_virtual;
+    fbmap->fbSize = fbmap->fbInfo.xres_virtual * fbmap->fbInfo.yres_virtual * fbmap->bpp;
 
-    fb_width = fbmap->fbInfo.xres;
-    fb_height = fbmap->fbInfo.yres;
+    fb_width = fbmap->fbInfo.xres_virtual;
+    fb_height = fbmap->fbInfo.yres_virtual;
 
     fbmap->fb = (unsigned char *)mmap(0, fbmap->fbSize, PROT_READ | PROT_WRITE, MAP_SHARED, fbmap->fd, 0);
     if (!fbmap->fb)
@@ -104,17 +104,17 @@ void fb_output(uint8_t *data, uint32_t offsetX, uint32_t offsetY, uint32_t width
     //起始坐标限制
     if (offsetX < 0)
         offsetX = 0;
-    else if (offsetX >= fbmap->fbInfo.xres)
+    else if (offsetX >= fbmap->fbInfo.xres_virtual)
         return;
     if (offsetY < 0)
         offsetY = 0;
-    else if (offsetY >= fbmap->fbInfo.yres)
+    else if (offsetY >= fbmap->fbInfo.yres_virtual)
         return;
     //范围限制
     if (width < 1)
         return;
-    else if (offsetX + width - 1 >= fbmap->fbInfo.xres)
-        width = fbmap->fbInfo.xres - offsetX;
+    else if (offsetX + width - 1 >= fbmap->fbInfo.xres_virtual)
+        width = fbmap->fbInfo.xres_virtual - offsetX;
     if (height < 1)
         return;
     else if (offsetY + height - 1 >= fbmap->fbInfo.yres)
